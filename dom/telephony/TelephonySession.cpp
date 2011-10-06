@@ -210,7 +210,7 @@ TelephonySession::GetReadyState(nsAString& aReadyState)
 NS_IMETHODIMP
 TelephonySession::GetGroup(nsIDOMTelephonySessionGroup** aGroup)
 {
-  nsCOMPtr<nsIDOMTelephonySessionGroup> group = mGroup;
+  nsCOMPtr<nsIDOMTelephonySessionGroup> group(mGroup);
   group.forget(aGroup);
   return NS_OK;
 }

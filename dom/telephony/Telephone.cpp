@@ -94,8 +94,7 @@ Telephone::DialConcrete(const nsAString& aPhoneNumber, TelephoneCall** aResult)
 
   PRUint64 token = GetNewRequestToken();
 
-  nsAutoPtr<nsIRadio::REQUEST_DIAL_Args> args =
-    new nsIRadio::REQUEST_DIAL_Args();
+  nsAutoPtr<nsIRadio::REQUEST_DIAL_Args> args(new nsIRadio::REQUEST_DIAL_Args());
   args->mPhoneNumber = aPhoneNumber;
 
   nsresult rv = mRadio->MakeRequest(token, nsIRadio::REQUEST_DIAL, args,
@@ -125,8 +124,7 @@ Telephone::HangUp(TelephoneCall* aCall)
 
   PRUint64 token = GetNewRequestToken();
 
-  nsAutoPtr<nsIRadio::REQUEST_HANGUP_Args> args =
-    new nsIRadio::REQUEST_HANGUP_Args();
+  nsAutoPtr<nsIRadio::REQUEST_HANGUP_Args> args(new nsIRadio::REQUEST_HANGUP_Args());
   args->mId = aCall->GetId();
 
   nsresult rv = mRadio->MakeRequest(token, nsIRadio::REQUEST_HANGUP, args,

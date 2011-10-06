@@ -59,7 +59,6 @@ USE_EXTENSION_MANIFEST=1
 
 TEST_EXTENSIONS_DIR = $(DEPTH)/_tests/testing/mochitest/extensions
 
-<<<<<<< HEAD
 include $(topsrcdir)/config/rules.mk
 GENERATED_DIRS += $(TEST_EXTENSIONS_DIR)
 GARBAGE_DIRS += $(TEST_EXTENSIONS_DIR)
