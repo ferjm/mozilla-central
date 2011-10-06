@@ -105,6 +105,7 @@
 #include "mozilla/TimeStamp.h"
 #include "nsIDOMTouchEvent.h"
 #include "nsIInlineEventHandlers.h"
+#include "nsIDOMNavigatorTelephony.h"
 
 // JS includes
 #include "jsapi.h"
@@ -1082,7 +1083,8 @@ protected:
 class nsNavigator : public nsIDOMNavigator,
                     public nsIDOMClientInformation,
                     public nsIDOMNavigatorGeolocation,
-                    public nsIDOMNavigatorDesktopNotification
+                    public nsIDOMNavigatorDesktopNotification,
+                    public nsIDOMNavigatorTelephony
 {
 public:
   nsNavigator(nsIDocShell *aDocShell);
@@ -1093,6 +1095,7 @@ public:
   NS_DECL_NSIDOMCLIENTINFORMATION
   NS_DECL_NSIDOMNAVIGATORGEOLOCATION
   NS_DECL_NSIDOMNAVIGATORDESKTOPNOTIFICATION
+  NS_DECL_NSIDOMNAVIGATORTELEPHONY
   
   void SetDocShell(nsIDocShell *aDocShell);
   nsIDocShell *GetDocShell()
@@ -1112,6 +1115,7 @@ protected:
   nsRefPtr<nsPluginArray> mPlugins;
   nsRefPtr<nsGeolocation> mGeolocation;
   nsRefPtr<nsDesktopNotificationCenter> mNotification;
+  nsCOMPtr<nsIDOMTelephony> mTelephony;
   nsIDocShell* mDocShell; // weak reference
 };
 

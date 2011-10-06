@@ -1,4 +1,3 @@
-#
 # ***** BEGIN LICENSE BLOCK *****
 # Version: MPL 1.1/GPL 2.0/LGPL 2.1
 #
@@ -12,14 +11,15 @@
 # for the specific language governing rights and limitations under the
 # License.
 #
-# The Original Code is mozilla.org code.
+# The Original Code is Telephony.
 #
 # The Initial Developer of the Original Code is
-# Mozilla Foundation
-# Portions created by the Initial Developer are Copyright (C) 2010
+#   The Mozilla Foundation.
+# Portions created by the Initial Developer are Copyright (C) 2011
 # the Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
+#   Ben Turner <bent.mozilla@gmail.com> (Original Author)
 #
 # Alternatively, the contents of this file may be used under the terms of
 # either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,34 +35,54 @@
 #
 # ***** END LICENSE BLOCK *****
 
-DEPTH           = ../../..
-topsrcdir       = @top_srcdir@
-srcdir          = @srcdir@
-VPATH           = @srcdir@
-relativesrcdir  = testing/mochitest/specialpowers
+DEPTH            = ../..
+topsrcdir        = @top_srcdir@
+srcdir           = @srcdir@
+VPATH            = @srcdir@
 
 include $(DEPTH)/config/autoconf.mk
 
-NO_JS_MANIFEST = 1
-MOZ_CHROME_FILE_FORMAT = flat
-DIST_FILES = \
-  install.rdf \
-  chrome.manifest \
+LIBRARY_NAME     = domtelephony_s
+XPIDL_MODULE     = dom_telephony
+LIBXUL_LIBRARY   = 1
+FORCE_STATIC_LIB = 1
+
+include $(topsrcdir)/dom/dom-config.mk
+
+EXPORTS_NAMESPACES = mozilla/dom/telephony
+
+EXPORTS_mozilla/dom/telephony = \
+  TelephonyPublic.h \
   $(NULL)
 
-EXTRA_COMPONENTS = components/SpecialPowersObserver.js
+CPPSRCS = \
+  IncomingCallEvent.cpp \
+  Radio.cpp \
+  RadioBase.cpp \
+  Telephone.cpp \
+  TelephoneCall.cpp \
+  Telephony.cpp \
+  TelephonySession.cpp \
+  TelephonySessionGroup.cpp \
+  $(NULL)
 
-XPI_NAME=specialpowers
+LOCAL_INCLUDES = \
+  -I$(topsrcdir)/dom/base \
+  -I$(topsrcdir)/content/events/src \
+  $(NULL)
 
-# Used in install.rdf
-USE_EXTENSION_MANIFEST=1
+XPIDLSRCS = \
+  nsIDOMIncomingCallEvent.idl \
+  nsIDOMNavigatorTelephony.idl \
+  nsIDOMTelephony.idl \
+  nsIDOMTelephonySession.idl \
+  nsIDOMTelephonySessionGroup.idl \
+  nsITelephone.idl \
+  nsITelephoneCall.idl \
+  $(NULL)
 
-TEST_EXTENSIONS_DIR = $(DEPTH)/_tests/testing/mochitest/extensions
+ifdef ENABLE_TESTS
+DIRS += test
+endif
 
-<<<<<<< HEAD
 include $(topsrcdir)/config/rules.mk
-GENERATED_DIRS += $(TEST_EXTENSIONS_DIR)
-GARBAGE_DIRS += $(TEST_EXTENSIONS_DIR)
-libs::
-	$(MKDIR) -p $(TEST_EXTENSIONS_DIR)
-	(cd $(DIST)/xpi-stage && tar $(TAR_CREATE_FLAGS) - $(XPI_NAME)) | (cd $(TEST_EXTENSIONS_DIR) && tar -xf -)
