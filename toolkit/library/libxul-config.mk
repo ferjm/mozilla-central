@@ -99,6 +99,10 @@ STATIC_LIBS += \
   hal_s \
   $(NULL)
 
+#ifeq ($(OS_TARGET),Gonk) #{
+STATIC_LIBS += mozril_s
+#endif #}
+
 ifdef MOZ_IPDL_TESTS
 STATIC_LIBS += ipdlunittest_s
 endif
