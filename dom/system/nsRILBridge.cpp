@@ -35,13 +35,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-class nsRILBridge : public nsIRILBridge,
-//                  public nsIObserver
-{
-    virtual nsRILBridge();
-    NS_DECL_ISUPPORTS
-    //NS_DECL_NSIOBSERVER
-};
+#include "nsIRILBridge.h"
+#include "nsAutoPtr.h"
 
 NS_IMPL_ISUPPORTS1(nsRILBridge, nsIRILBridge)
 
@@ -49,22 +44,22 @@ nsRILBridge::~nsRILBridge()
 {
 }
 
-already_AddRefed<nsISupports>
-ConstructRILBridge()
+already_AddRefed<nsRILBridge>
+nsRILBridge::Create()
 {
-  AssertIsOnMainThread();
+    NS_ASSERTION(NS_IsMainThread(), "bad thread");
 
-  nsRefPtr<nsRILBridge> instance(new nsRILBridge());
+    nsRefPtr<nsRILBridge> instance(new nsRILBridge());
 #if 0
-  if (!instance) {
-    instance = new PhauxPhone();
-    if (NS_FAILED(instance->Init())) {
-      return nsnull;
-    }
+    if (!instance) {
+        instance = new PhauxPhone();
+        if (NS_FAILED(instance->Init())) {
+            return nsnull;
+        }
 
-    gInstance = instance;
-  }
+        gInstance = instance;
+    }
 #endif
 
-  return instance.forget();
+    return instance.forget();
 }

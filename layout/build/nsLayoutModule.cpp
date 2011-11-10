@@ -704,6 +704,7 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsSystemPrincipal,
     nsScriptSecurityManager::SystemPrincipalSingletonConstructor)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsNullPrincipal, Init)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsStructuredCloneContainer)
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsRILBridge, nsRILBridge::Create)
 
 static nsresult
 Construct_nsIScriptSecurityManager(nsISupports *aOuter, REFNSIID aIID, 
@@ -843,7 +844,7 @@ NS_DEFINE_NAMED_CID(NS_NULLPRINCIPAL_CID);
 NS_DEFINE_NAMED_CID(NS_SECURITYNAMESET_CID);
 NS_DEFINE_NAMED_CID(THIRDPARTYUTIL_CID);
 NS_DEFINE_NAMED_CID(NS_STRUCTUREDCLONECONTAINER_CID);
-NS_DEFINE_NAMED_CID(NS_RILBRIDGE_CONTRACTID);
+NS_DEFINE_NAMED_CID(NS_RILBRIDGE_CID);
 
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
@@ -990,7 +991,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #endif
   { &kTHIRDPARTYUTIL_CID, false, NULL, ThirdPartyUtilConstructor },
   { &kNS_STRUCTUREDCLONECONTAINER_CID, false, NULL, nsStructuredCloneContainerConstructor },
-  { &kNS_RILBRIDGE_CID, true, NULL, ConstructRILBridge },
+  { &kNS_RILBRIDGE_CID, true, NULL, nsRILBridgeConstructor },
   { NULL }
 };
 

@@ -36,6 +36,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "nsISupports.h"
+#include "nsCOMPtr.h"
 
 // 1302b1d2-e065-4827-a396-e0df87f55753
 #define NS_RILBRIDGE_IID \
@@ -60,7 +61,15 @@ public:
     // TODO Write an API.
 };
 
-already_AddRefed<nsISupports>
-ConstructRILBridge();
+class nsRILBridge : public nsIRILBridge
+//                  public nsIObserver
+{
+public:
+    virtual ~nsRILBridge();
+    NS_DECL_ISUPPORTS
+    //NS_DECL_NSIOBSERVER
+
+    static already_AddRefed<nsRILBridge> Create();
+};
 
 NS_DEFINE_STATIC_IID_ACCESSOR(nsIRILBridge, NS_RILBRIDGE_IID)
