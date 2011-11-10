@@ -63,6 +63,7 @@ endif
 
 CPPSRCS     = \
   nsDeviceMotion.cpp \
+  nsRILBridge.cpp \
   $(NULL)
 
 # We fire the nsDOMDeviceAcceleration
@@ -81,6 +82,7 @@ endif
 
 EXPORTS     = \
   nsDeviceMotion.h \
+  nsIRILBridge.h \
   $(NULL)
 
 include $(topsrcdir)/config/config.mk
