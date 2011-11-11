@@ -67,6 +67,12 @@ Radio::~Radio()
   gInstance = nsnull;
 }
 
+nsresult
+Radio::Init()
+{
+  return NS_OK;
+}
+
 // static
 already_AddRefed<Radio>
 Radio::FactoryCreate()

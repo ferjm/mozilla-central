@@ -11474,6 +11474,7 @@ NS_IMETHODIMP nsNavigator::GetMozNotification(nsIDOMDesktopNotificationCenter **
 NS_IMETHODIMP
 nsNavigator::GetMozTelephony(nsIDOMTelephony **aTelephony)
 {
+#if 0
   nsCOMPtr<nsIDOMTelephony> telephony = mTelephony;
 
   if (!telephony) {
@@ -11489,6 +11490,9 @@ nsNavigator::GetMozTelephony(nsIDOMTelephony **aTelephony)
 
   telephony.forget(aTelephony);
   return NS_OK;
+#else
+  return NS_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 #define EVENT(name_, id_, type_, struct_)                                    \
