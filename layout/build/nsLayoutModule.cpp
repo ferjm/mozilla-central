@@ -148,7 +148,7 @@ using mozilla::dom::indexedDB::IndexedDatabaseManager;
 #include "nsNullPrincipal.h"
 #include "nsNetCID.h"
 #include "nsINodeInfo.h"
-#include "nsIRILBridge.h"
+#include "nsRadioBridge.h"
 #if defined(ANDROID) || defined(MOZ_PLATFORM_MAEMO)
 #include "nsHapticFeedback.h"
 #endif
@@ -704,7 +704,7 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsSystemPrincipal,
     nsScriptSecurityManager::SystemPrincipalSingletonConstructor)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsNullPrincipal, Init)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsStructuredCloneContainer)
-NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsRILBridge, nsRILBridge::Create)
+NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsRadioBridge, nsRadioBridge::Create)
 
 static nsresult
 Construct_nsIScriptSecurityManager(nsISupports *aOuter, REFNSIID aIID, 
@@ -844,7 +844,7 @@ NS_DEFINE_NAMED_CID(NS_NULLPRINCIPAL_CID);
 NS_DEFINE_NAMED_CID(NS_SECURITYNAMESET_CID);
 NS_DEFINE_NAMED_CID(THIRDPARTYUTIL_CID);
 NS_DEFINE_NAMED_CID(NS_STRUCTUREDCLONECONTAINER_CID);
-NS_DEFINE_NAMED_CID(NS_RILBRIDGE_CID);
+NS_DEFINE_NAMED_CID(NS_RADIOBRIDGE_CID);
 
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
@@ -991,7 +991,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #endif
   { &kTHIRDPARTYUTIL_CID, false, NULL, ThirdPartyUtilConstructor },
   { &kNS_STRUCTUREDCLONECONTAINER_CID, false, NULL, nsStructuredCloneContainerConstructor },
-  { &kNS_RILBRIDGE_CID, true, NULL, nsRILBridgeConstructor },
+  { &kNS_RADIOBRIDGE_CID, true, NULL, nsRadioBridgeConstructor },
   { NULL }
 };
 
@@ -1122,7 +1122,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
 #endif
   { THIRDPARTYUTIL_CONTRACTID, &kTHIRDPARTYUTIL_CID },
   { NS_STRUCTUREDCLONECONTAINER_CONTRACTID, &kNS_STRUCTUREDCLONECONTAINER_CID },
-  { NS_RILBRIDGE_CONTRACTID, &kNS_RILBRIDGE_CID },
+  { NS_RADIOBRIDGE_CONTRACTID, &kNS_RADIOBRIDGE_CID },
   { NULL }
 };
 
@@ -1143,7 +1143,7 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
   { JAVASCRIPT_GLOBAL_STATIC_NAMESET_CATEGORY, "PrivilegeManager", NS_SECURITYNAMESET_CONTRACTID },
   { "app-startup", "Script Security Manager", "service," NS_SCRIPTSECURITYMANAGER_CONTRACTID },
   CONTENTDLF_CATEGORIES
-  { "profile-after-change", "RIL bridge", NS_RILBRIDGE_CONTRACTID },
+  { "profile-after-change", "radio bridge", "service," NS_RADIOBRIDGE_CONTRACTID },
   { NULL }
 };
 

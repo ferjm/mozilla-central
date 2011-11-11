@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is the gonk RIL bridge.
+ * The Original Code is the Gonk radio bridge.
  *
  * The Initial Developer of the Original Code is
  * The Mozilla Foundation.
@@ -35,31 +35,40 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "nsIRILBridge.h"
+#include "nsRadioBridge.h"
 #include "nsAutoPtr.h"
 
-NS_IMPL_ISUPPORTS1(nsRILBridge, nsIRILBridge)
+NS_IMPL_ISUPPORTS0(nsRadioBridge)
 
-nsRILBridge::~nsRILBridge()
+nsRadioBridge *
+nsRadioBridge::sInstance = nsnull;
+
+nsRadioBridge::~nsRadioBridge()
 {
+    NS_ASSERTION(!sInstance || this == sInstance, "weird object");
+    sInstance = nsnull;
 }
 
-already_AddRefed<nsRILBridge>
-nsRILBridge::Create()
+nsresult
+nsRadioBridge::Init()
+{
+    return NS_OK;
+}
+
+already_AddRefed<nsRadioBridge>
+nsRadioBridge::Create()
 {
     NS_ASSERTION(NS_IsMainThread(), "bad thread");
 
-    nsRefPtr<nsRILBridge> instance(new nsRILBridge());
-#if 0
+    nsRefPtr<nsRadioBridge> instance(sInstance);
     if (!instance) {
-        instance = new PhauxPhone();
+        instance = new nsRadioBridge();
         if (NS_FAILED(instance->Init())) {
             return nsnull;
         }
 
-        gInstance = instance;
+        sInstance = instance;
     }
-#endif
 
     return instance.forget();
 }

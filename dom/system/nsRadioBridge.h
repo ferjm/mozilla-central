@@ -38,38 +38,24 @@
 #include "nsISupports.h"
 #include "nsCOMPtr.h"
 
-// 1302b1d2-e065-4827-a396-e0df87f55753
-#define NS_RILBRIDGE_IID \
-{ 0x1302b1d2, 0xe065, 0x4827, \
-  { 0xa3, 0x96, 0xe0, 0xdf, 0x87, 0xf5, 0x57, 0x53 } }
-
-#define NS_RILBRIDGE_CONTRACTID \
+#define NS_RADIOBRIDGE_CONTRACTID \
     "@mozilla.org/telephony/rilbridge;1"
 
 // d5bd378b-7c8f-4241-b389-f2ee674940fe
-#define NS_RILBRIDGE_CID \
+#define NS_RADIOBRIDGE_CID \
 { 0xd5bd378b, 0x7c8f, 0x4241, \
   { 0xb3, 0x89, 0xf2, 0xee, 0x67, 0x49, 0x40, 0xfe } }
 
-// XXX Needs to be IDL.
-class nsIRILBridge : public nsISupports {
-public:
-    NS_DECLARE_STATIC_IID_ACCESSOR(NS_RILBRIDGE_IID)
-
-    virtual ~nsIRILBridge() = 0;
-
-    // TODO Write an API.
-};
-
-class nsRILBridge : public nsIRILBridge
-//                  public nsIObserver
+class nsRadioBridge : public nsISupports
 {
 public:
-    virtual ~nsRILBridge();
+    virtual ~nsRadioBridge();
     NS_DECL_ISUPPORTS
-    //NS_DECL_NSIOBSERVER
 
-    static already_AddRefed<nsRILBridge> Create();
+    static already_AddRefed<nsRadioBridge> Create();
+
+private:
+    nsresult Init();
+
+    static nsRadioBridge *sInstance;
 };
-
-NS_DEFINE_STATIC_IID_ACCESSOR(nsIRILBridge, NS_RILBRIDGE_IID)
