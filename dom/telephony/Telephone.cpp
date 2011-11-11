@@ -39,8 +39,6 @@
 
 #include "Telephone.h"
 
-#include "nsIRadio.h"
-
 #include "nsThreadUtils.h"
 
 #include "TelephoneCall.h"
@@ -70,7 +68,7 @@ Telephone::~Telephone()
 
 // static
 already_AddRefed<Telephone>
-Telephone::Create(nsIRadio* aRadio)
+Telephone::Create()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
   NS_ASSERTION(aRadio, "Null pointer!");

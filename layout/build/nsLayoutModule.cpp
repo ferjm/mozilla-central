@@ -127,6 +127,7 @@
 #include "nsJSON.h"
 #include "mozilla/dom/indexedDB/IndexedDatabaseManager.h"
 #include "Radio.h"
+#include "RadioBase.h"
 
 using mozilla::dom::indexedDB::IndexedDatabaseManager;
 using mozilla::dom::telephony::Radio;
@@ -150,7 +151,6 @@ using mozilla::dom::telephony::Radio;
 #include "nsNullPrincipal.h"
 #include "nsNetCID.h"
 #include "nsINodeInfo.h"
-#include "nsRadioBridge.h"
 #if defined(ANDROID) || defined(MOZ_PLATFORM_MAEMO)
 #include "nsHapticFeedback.h"
 #endif
@@ -708,7 +708,6 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsSystemPrincipal,
     nsScriptSecurityManager::SystemPrincipalSingletonConstructor)
 NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsNullPrincipal, Init)
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsStructuredCloneContainer)
-NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsRadioBridge, nsRadioBridge::Create)
 
 static nsresult
 Construct_nsIScriptSecurityManager(nsISupports *aOuter, REFNSIID aIID, 
@@ -849,7 +848,6 @@ NS_DEFINE_NAMED_CID(NS_NULLPRINCIPAL_CID);
 NS_DEFINE_NAMED_CID(NS_SECURITYNAMESET_CID);
 NS_DEFINE_NAMED_CID(THIRDPARTYUTIL_CID);
 NS_DEFINE_NAMED_CID(NS_STRUCTUREDCLONECONTAINER_CID);
-NS_DEFINE_NAMED_CID(NS_RADIOBRIDGE_CID);
 
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
@@ -997,7 +995,6 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
 #endif
   { &kTHIRDPARTYUTIL_CID, false, NULL, ThirdPartyUtilConstructor },
   { &kNS_STRUCTUREDCLONECONTAINER_CID, false, NULL, nsStructuredCloneContainerConstructor },
-  { &kNS_RADIOBRIDGE_CID, true, NULL, nsRadioBridgeConstructor },
   { NULL }
 };
 
@@ -1129,7 +1126,6 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
 #endif
   { THIRDPARTYUTIL_CONTRACTID, &kTHIRDPARTYUTIL_CID },
   { NS_STRUCTUREDCLONECONTAINER_CONTRACTID, &kNS_STRUCTUREDCLONECONTAINER_CID },
-  { NS_RADIOBRIDGE_CONTRACTID, &kNS_RADIOBRIDGE_CID },
   { NULL }
 };
 
@@ -1151,11 +1147,9 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
   { "app-startup", "Script Security Manager", "service," NS_SCRIPTSECURITYMANAGER_CONTRACTID },
   CONTENTDLF_CATEGORIES
 
-  { "profile-after-change", "radio bridge", "service," NS_RADIOBRIDGE_CONTRACTID },
-
   // This probably should be "app-startup" but we want our testing extension to
   // be able to override the contractid so we wait until "profile-after-change".
-  { "profile-after-change", "Telephony Radio", TELEPHONYRADIO_CONTRACTID },
+  { "profile-after-change", "Telephony Radio", "service," TELEPHONYRADIO_CONTRACTID },
   { NULL }
 };
 

@@ -88,10 +88,3 @@ Radio::FactoryCreate()
 }
 
 NS_IMPL_ISUPPORTS_INHERITED0(Radio, RadioBase)
-
-nsresult
-Radio::MakeRequest(PRUint64 aToken, PRUint64 aRequest, void* aData,
-                   size_t aDataLen)
-{
-  return NS_ERROR_NOT_IMPLEMENTED;
-}

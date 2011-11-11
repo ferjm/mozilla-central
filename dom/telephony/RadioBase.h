@@ -42,16 +42,15 @@
 
 #include "TelephonyCommon.h"
 
-#include "nsIRadio.h"
 #include "nsIObserver.h"
+
+#define TELEPHONYRADIO_CONTRACTID "@mozilla.org/telephony/radio;1"
 
 BEGIN_TELEPHONY_NAMESPACE
 
-class RadioBase : public nsIRadio,
-                  public nsIObserver
+class RadioBase : public nsIObserver
 {
 protected:
-  nsAutoTObserverArray<nsCOMPtr<nsIRadioCallback>, 1> mCallbacks;
   bool mShutdown;
 
 public:
@@ -63,15 +62,6 @@ public:
 
   virtual void
   Shutdown();
-
-  // nsIRadio methods
-  virtual nsresult
-  RegisterCallback(nsIRadioCallback* aCallback);
-
-  virtual nsresult
-  UnregisterCallback(nsIRadioCallback* aCallback);
-
-  // Leave  MakeRequest for subclasses.
 
 protected:
   RadioBase();

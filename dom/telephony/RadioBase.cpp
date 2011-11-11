@@ -48,16 +48,6 @@
 
 #define PROFILE_BEFORE_CHANGE_TOPIC "profile-before-change"
 
-#define NOTIFY_OBSERVERS(func_, params_) \
-  PR_BEGIN_MACRO                                                               \
-    nsAutoTObserverArray<nsCOMPtr<nsIRadioCallback>, 1>::ForwardIterator       \
-      iter_(mCallbacks);                                                       \
-    while (iter_.HasMore()) {                                                  \
-      nsCOMPtr<nsIRadioCallback> obs_ = iter_.GetNext();                       \
-      obs_ -> func_ params_ ;                                                  \
-    }                                                                          \
-  PR_END_MACRO
-
 USING_TELEPHONY_NAMESPACE
 
 RadioBase::RadioBase()
@@ -95,66 +85,7 @@ RadioBase::Shutdown()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
-  NOTIFY_OBSERVERS(OnShutdown, ());
-  mCallbacks.Clear();
-
   mShutdown = true;
 }
 
-NS_IMPL_ISUPPORTS2(RadioBase, nsIRadio, nsIObserver)
-
-nsresult
-RadioBase::RegisterCallback(nsIRadioCallback* aCallback)
-{
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-
-  if (mShutdown) {
-    NS_WARNING("No callbacks may be added after shutdown!");
-    return NS_ERROR_ILLEGAL_DURING_SHUTDOWN;
-  }
-
-  NS_ASSERTION(!mCallbacks.Contains(aCallback),
-               "Already registered this callback!");
-
-  mCallbacks.AppendElement(aCallback);
-  return NS_OK;
-}
-
-nsresult
-RadioBase::UnregisterCallback(nsIRadioCallback* aCallback)
-{
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-
-  if (mShutdown) {
-    NS_WARNING("Callbacks already removed at shutdown!");
-    return NS_OK;
-  }
-
-  NS_ASSERTION(mCallbacks.Contains(aCallback),
-               "Didn't know anything about this callback!");
-
-  mCallbacks.RemoveElement(aCallback);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-RadioBase::Observe(nsISupports* aSubject, const char* aTopic,
-                   const PRUnichar* aData)
-{
-  if (!strcmp(aTopic, PROFILE_BEFORE_CHANGE_TOPIC)) {
-    Shutdown();
-
-    nsCOMPtr<nsIObserverService> obs =
-      do_GetService(NS_OBSERVERSERVICE_CONTRACTID);
-    if (obs) {
-      if (NS_FAILED(obs->RemoveObserver(this, aTopic))) {
-        NS_WARNING("Failed to remove observer!");
-      }
-    }
-    else {
-      NS_WARNING("Failed to get observer service!");
-    }
-  }
-
-  return NS_OK;
-}
+NS_IMPL_ISUPPORTS1(RadioBase, nsIObserver)

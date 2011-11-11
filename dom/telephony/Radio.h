@@ -53,12 +53,10 @@ class Radio : public RadioBase
 public:
   NS_DECL_ISUPPORTS_INHERITED
 
+  virtual nsresult Init();
+
   static already_AddRefed<Radio>
   FactoryCreate();
-
-  // nsIRadio methods
-  virtual nsresult
-  MakeRequest(PRUint64 aToken, PRUint64 aRequest, void* aData, size_t aDataLen);
 
 protected:
   Radio();

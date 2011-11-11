@@ -42,19 +42,16 @@
 
 #include "TelephonyCommon.h"
 
-#include "nsIRadio.h"
 #include "nsITelephone.h"
 
 BEGIN_TELEPHONY_NAMESPACE
 
 class TelephoneCall;
 
-class Telephone : public nsITelephone,
-                  public nsIRadioCallback
+class Telephone : public nsITelephone
 {
   friend class TelephoneCall;
 
-  nsCOMPtr<nsIRadio> mRadio;
   nsAutoTObserverArray<nsCOMPtr<nsITelephoneCallback>, 1> mCallbacks;
 
   // Weak references.
