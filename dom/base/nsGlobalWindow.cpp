@@ -256,6 +256,9 @@
 #include <android/log.h>
 #endif
 
+#include "mozilla/dom/telephony/TelephonyPublic.h"
+#include "nsIDOMTelephony.h"
+
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gDOMLeakPRLog;
 #endif
@@ -10748,6 +10751,7 @@ NS_INTERFACE_MAP_BEGIN(nsNavigator)
   NS_INTERFACE_MAP_ENTRY(nsIDOMClientInformation)
   NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorGeolocation)
   NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorDesktopNotification)
+  NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorTelephony)
   NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(Navigator)
 NS_INTERFACE_MAP_END
 
@@ -10774,6 +10778,11 @@ nsNavigator::SetDocShell(nsIDocShell *aDocShell)
   {
     mNotification->Shutdown();
     mNotification = nsnull;
+  }
+
+  if (mTelephony)
+  {
+    mTelephony = nsnull;
   }
 }
 
@@ -11422,7 +11431,6 @@ NS_IMETHODIMP nsNavigator::GetGeolocation(nsIDOMGeoGeolocation **_retval)
   return NS_OK; 
 }
 
-
 //*****************************************************************************
 //    nsNavigator::nsIDOMNavigatorDesktopNotification
 //*****************************************************************************
@@ -11457,6 +11465,30 @@ NS_IMETHODIMP nsNavigator::GetMozNotification(nsIDOMDesktopNotificationCenter **
 
   NS_ADDREF(*aRetVal = mNotification);    
   return NS_OK; 
+}
+
+//*****************************************************************************
+//    nsNavigator::nsIDOMNavigatorTelephony
+//*****************************************************************************
+
+NS_IMETHODIMP
+nsNavigator::GetMozTelephony(nsIDOMTelephony **aTelephony)
+{
+  nsCOMPtr<nsIDOMTelephony> telephony = mTelephony;
+
+  if (!telephony) {
+    nsCOMPtr<nsPIDOMWindow> window = do_GetInterface(mDocShell);
+    NS_ENSURE_TRUE(window, NS_NOINTERFACE);
+
+    nsresult rv = NS_NewTelephony(window, getter_AddRefs(mTelephony));
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    // mTelephony may be null here!
+    telephony = mTelephony;
+  }
+
+  telephony.forget(aTelephony);
+  return NS_OK;
 }
 
 #define EVENT(name_, id_, type_, struct_)                                    \

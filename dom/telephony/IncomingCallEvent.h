@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -11,15 +13,15 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Gonk.
+ * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Michael Wu <mwu@mozilla.com>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,60 +37,51 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsAppShell_h
-#define nsAppShell_h
+#ifndef mozilla_dom_telephony_incomingcallevent_h__
+#define mozilla_dom_telephony_incomingcallevent_h__
 
-#include "nsBaseAppShell.h"
+#include "TelephonyCommon.h"
 
-namespace mozilla {
-bool ProcessNextEvent();
-void NotifyEvent();
-}
+#include "nsIDOMIncomingCallEvent.h"
 
-extern bool gDrawRequest;
+#include "nsDOMEvent.h"
 
-class FdHandler;
-typedef void(*FdHandlerCallback)(int, FdHandler *);
+#include "TelephonySession.h"
 
-class FdHandler {
+BEGIN_TELEPHONY_NAMESPACE
+
+class IncomingCallEvent : public nsDOMEvent,
+                          public nsIDOMIncomingCallEvent
+{
+  nsRefPtr<TelephonySession> mSession;
+
 public:
-    FdHandler() : mtState(MT_START), mtDown(false) { }
+  NS_DECL_ISUPPORTS_INHERITED
+  NS_FORWARD_TO_NSDOMEVENT
+  NS_DECL_NSIDOMINCOMINGCALLEVENT
+  NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(IncomingCallEvent,
+                                           nsDOMEvent)
 
-    int fd;
-    FdHandlerCallback func;
-    enum mtStates {
-        MT_START,
-        MT_COLLECT,
-        MT_IGNORE
-    } mtState;
-    int mtX, mtY;
-    int mtMajor;
-    bool mtDown;
+  static already_AddRefed<IncomingCallEvent>
+  Create(TelephonySession* aSession);
 
-    void run()
-    {
-        func(fd, this);
-    }
+  nsISupports*
+  ToISupports() const
+  {
+    return static_cast<nsIDOMEvent*>(
+             static_cast<nsDOMEvent*>(
+               const_cast<IncomingCallEvent*>(this)));
+  }
+
+private:
+  IncomingCallEvent()
+  : nsDOMEvent(nsnull, nsnull)
+  { }
+
+  ~IncomingCallEvent()
+  { }
 };
 
-class nsAppShell : public nsBaseAppShell {
-public:
-    nsAppShell();
+END_TELEPHONY_NAMESPACE
 
-    nsresult Init();
-    virtual bool ProcessNextNativeEvent(bool maywait);
-
-    void NotifyNativeEvent();
-
-protected:
-    virtual ~nsAppShell();
-
-    virtual void ScheduleNativeEventCallback();
-
-    // This is somewhat racy but is perfectly safe given how the callback works
-    bool mNativeCallbackRequest;
-    nsTArray<FdHandler> mHandlers;
-};
-
-#endif /* nsAppShell_h */
-
+#endif // mozilla_dom_telephony_incomingcallevent_h__

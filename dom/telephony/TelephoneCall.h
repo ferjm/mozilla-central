@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -11,15 +13,15 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Gonk.
+ * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Michael Wu <mwu@mozilla.com>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,60 +37,58 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsAppShell_h
-#define nsAppShell_h
+#ifndef mozilla_dom_telephony_telephonecall_h__
+#define mozilla_dom_telephony_telephonecall_h__
 
-#include "nsBaseAppShell.h"
+#include "TelephonyCommon.h"
 
-namespace mozilla {
-bool ProcessNextEvent();
-void NotifyEvent();
-}
+#include "nsITelephoneCall.h"
 
-extern bool gDrawRequest;
+BEGIN_TELEPHONY_NAMESPACE
 
-class FdHandler;
-typedef void(*FdHandlerCallback)(int, FdHandler *);
+class Telephone;
 
-class FdHandler {
+class TelephoneCall : public nsITelephoneCall
+{
+  friend class Telephone;
+
+  nsRefPtr<Telephone> mTelephone;
+  nsAutoTObserverArray<nsCOMPtr<nsITelephoneCallCallback>, 1> mCallbacks;
+  nsString mPhoneNumber;
+  PRUint64 mId;
+  PRUint16 mState;
+
 public:
-    FdHandler() : mtState(MT_START), mtDown(false) { }
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSITELEPHONECALL
 
-    int fd;
-    FdHandlerCallback func;
-    enum mtStates {
-        MT_START,
-        MT_COLLECT,
-        MT_IGNORE
-    } mtState;
-    int mtX, mtY;
-    int mtMajor;
-    bool mtDown;
+  static already_AddRefed<TelephoneCall>
+  Create(Telephone* aTelephone, const nsAString& aPhoneNumber,
+         PRUint16 aState = nsITelephoneCall::STATE_INITIAL);
 
-    void run()
-    {
-        func(fd, this);
-    }
-};
-
-class nsAppShell : public nsBaseAppShell {
-public:
-    nsAppShell();
-
-    nsresult Init();
-    virtual bool ProcessNextNativeEvent(bool maywait);
-
-    void NotifyNativeEvent();
+  nsresult
+  HangUp();
 
 protected:
-    virtual ~nsAppShell();
+  TelephoneCall();
+  ~TelephoneCall();
 
-    virtual void ScheduleNativeEventCallback();
+  void
+  ChangeState(PRUint16 aState);
 
-    // This is somewhat racy but is perfectly safe given how the callback works
-    bool mNativeCallbackRequest;
-    nsTArray<FdHandler> mHandlers;
+  void
+  SetId(PRUint64 aId)
+  {
+    mId = aId;
+  }
+
+  PRUint64
+  GetId() const
+  {
+    return mId;
+  }
 };
 
-#endif /* nsAppShell_h */
+END_TELEPHONY_NAMESPACE
 
+#endif // mozilla_dom_telephony_telephonecall_h__

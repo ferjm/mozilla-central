@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -11,15 +13,15 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Gonk.
+ * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Michael Wu <mwu@mozilla.com>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,60 +37,61 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsAppShell_h
-#define nsAppShell_h
+#include "Radio.h"
 
-#include "nsBaseAppShell.h"
+#include "nsThreadUtils.h"
 
-namespace mozilla {
-bool ProcessNextEvent();
-void NotifyEvent();
+// Topic we listen to for shutdown.
+#define PROFILE_BEFORE_CHANGE_TOPIC "profile-before-change"
+
+USING_TELEPHONY_NAMESPACE
+
+namespace {
+
+// Doesn't carry a reference, we're owned by services.
+Radio* gInstance = nsnull;
+
+} // anonymous namespace
+
+Radio::Radio()
+{
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+  NS_ASSERTION(!gInstance, "There should only be one instance!");
 }
 
-extern bool gDrawRequest;
+Radio::~Radio()
+{
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+  NS_ASSERTION(!gInstance || gInstance == this,
+               "There should only be one instance!");
+  gInstance = nsnull;
+}
 
-class FdHandler;
-typedef void(*FdHandlerCallback)(int, FdHandler *);
+// static
+already_AddRefed<Radio>
+Radio::FactoryCreate()
+{
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
-class FdHandler {
-public:
-    FdHandler() : mtState(MT_START), mtDown(false) { }
+  nsRefPtr<Radio> instance(gInstance);
 
-    int fd;
-    FdHandlerCallback func;
-    enum mtStates {
-        MT_START,
-        MT_COLLECT,
-        MT_IGNORE
-    } mtState;
-    int mtX, mtY;
-    int mtMajor;
-    bool mtDown;
-
-    void run()
-    {
-        func(fd, this);
+  if (!instance) {
+    instance = new Radio();
+    if (NS_FAILED(instance->Init())) {
+      return nsnull;
     }
-};
 
-class nsAppShell : public nsBaseAppShell {
-public:
-    nsAppShell();
+    gInstance = instance;
+  }
 
-    nsresult Init();
-    virtual bool ProcessNextNativeEvent(bool maywait);
+  return instance.forget();
+}
 
-    void NotifyNativeEvent();
+NS_IMPL_ISUPPORTS_INHERITED0(Radio, RadioBase)
 
-protected:
-    virtual ~nsAppShell();
-
-    virtual void ScheduleNativeEventCallback();
-
-    // This is somewhat racy but is perfectly safe given how the callback works
-    bool mNativeCallbackRequest;
-    nsTArray<FdHandler> mHandlers;
-};
-
-#endif /* nsAppShell_h */
-
+nsresult
+Radio::MakeRequest(PRUint64 aToken, PRUint64 aRequest, void* aData,
+                   size_t aDataLen)
+{
+  return NS_ERROR_NOT_IMPLEMENTED;
+}

@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -11,15 +13,15 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Gonk.
+ * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Michael Wu <mwu@mozilla.com>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,60 +37,34 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsAppShell_h
-#define nsAppShell_h
+#ifndef mozilla_dom_telephony_radio_h__
+#define mozilla_dom_telephony_radio_h__
 
-#include "nsBaseAppShell.h"
+#include "RadioBase.h"
 
-namespace mozilla {
-bool ProcessNextEvent();
-void NotifyEvent();
-}
+// {a5c3a6de-84c4-4b15-8611-8aeb8d97f8ba}
+#define TELEPHONYRADIO_CID \
+  {0xa5c3a6de, 0x84c4, 0x4b15, {0x86, 0x11, 0x8a, 0xeb, 0x8d, 0x97, 0xf8, 0xba}}
 
-extern bool gDrawRequest;
+BEGIN_TELEPHONY_NAMESPACE
 
-class FdHandler;
-typedef void(*FdHandlerCallback)(int, FdHandler *);
-
-class FdHandler {
+class Radio : public RadioBase
+{
 public:
-    FdHandler() : mtState(MT_START), mtDown(false) { }
+  NS_DECL_ISUPPORTS_INHERITED
 
-    int fd;
-    FdHandlerCallback func;
-    enum mtStates {
-        MT_START,
-        MT_COLLECT,
-        MT_IGNORE
-    } mtState;
-    int mtX, mtY;
-    int mtMajor;
-    bool mtDown;
+  static already_AddRefed<Radio>
+  FactoryCreate();
 
-    void run()
-    {
-        func(fd, this);
-    }
-};
-
-class nsAppShell : public nsBaseAppShell {
-public:
-    nsAppShell();
-
-    nsresult Init();
-    virtual bool ProcessNextNativeEvent(bool maywait);
-
-    void NotifyNativeEvent();
+  // nsIRadio methods
+  virtual nsresult
+  MakeRequest(PRUint64 aToken, PRUint64 aRequest, void* aData, size_t aDataLen);
 
 protected:
-    virtual ~nsAppShell();
-
-    virtual void ScheduleNativeEventCallback();
-
-    // This is somewhat racy but is perfectly safe given how the callback works
-    bool mNativeCallbackRequest;
-    nsTArray<FdHandler> mHandlers;
+  Radio();
+  ~Radio();
 };
 
-#endif /* nsAppShell_h */
+END_TELEPHONY_NAMESPACE
 
+#endif // mozilla_dom_telephony_radio_h__

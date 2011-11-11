@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -11,15 +13,15 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Gonk.
+ * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Michael Wu <mwu@mozilla.com>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,60 +37,47 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsAppShell_h
-#define nsAppShell_h
+#ifndef mozilla_dom_telephony_radiobase_h__
+#define mozilla_dom_telephony_radiobase_h__
 
-#include "nsBaseAppShell.h"
+#include "TelephonyCommon.h"
 
-namespace mozilla {
-bool ProcessNextEvent();
-void NotifyEvent();
-}
+#include "nsIRadio.h"
+#include "nsIObserver.h"
 
-extern bool gDrawRequest;
+BEGIN_TELEPHONY_NAMESPACE
 
-class FdHandler;
-typedef void(*FdHandlerCallback)(int, FdHandler *);
+class RadioBase : public nsIRadio,
+                  public nsIObserver
+{
+protected:
+  nsAutoTObserverArray<nsCOMPtr<nsIRadioCallback>, 1> mCallbacks;
+  bool mShutdown;
 
-class FdHandler {
 public:
-    FdHandler() : mtState(MT_START), mtDown(false) { }
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIOBSERVER
 
-    int fd;
-    FdHandlerCallback func;
-    enum mtStates {
-        MT_START,
-        MT_COLLECT,
-        MT_IGNORE
-    } mtState;
-    int mtX, mtY;
-    int mtMajor;
-    bool mtDown;
+  virtual nsresult
+  Init();
 
-    void run()
-    {
-        func(fd, this);
-    }
-};
+  virtual void
+  Shutdown();
 
-class nsAppShell : public nsBaseAppShell {
-public:
-    nsAppShell();
+  // nsIRadio methods
+  virtual nsresult
+  RegisterCallback(nsIRadioCallback* aCallback);
 
-    nsresult Init();
-    virtual bool ProcessNextNativeEvent(bool maywait);
+  virtual nsresult
+  UnregisterCallback(nsIRadioCallback* aCallback);
 
-    void NotifyNativeEvent();
+  // Leave  MakeRequest for subclasses.
 
 protected:
-    virtual ~nsAppShell();
-
-    virtual void ScheduleNativeEventCallback();
-
-    // This is somewhat racy but is perfectly safe given how the callback works
-    bool mNativeCallbackRequest;
-    nsTArray<FdHandler> mHandlers;
+  RadioBase();
+  virtual ~RadioBase();
 };
 
-#endif /* nsAppShell_h */
+END_TELEPHONY_NAMESPACE
 
+#endif // mozilla_dom_telephony_radiobase_h__

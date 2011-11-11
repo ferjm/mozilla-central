@@ -518,3 +518,8 @@ DOMCI_CLASS(MozCSSKeyframesRule)
 
 DOMCI_CLASS(MediaQueryList)
 DOMCI_CLASS(CustomEvent)
+
+DOMCI_CLASS(Telephony)
+DOMCI_CLASS(TelephonySession)
+DOMCI_CLASS(TelephonySessionGroup)
+DOMCI_CLASS(IncomingCallEvent)

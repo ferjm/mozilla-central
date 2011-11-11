@@ -3374,3 +3374,6 @@ pref("dom.event.handling-user-input-time-limit", 1000);
  
 //3D Transforms
 pref("layout.3d-transforms.enabled", true);
+
+// URL for the dialer application.
+pref("dom.telephony.app.phone.url", "file:///data/local/dialer.html");
