@@ -256,8 +256,10 @@
 #include <android/log.h>
 #endif
 
+#if 0
 #include "mozilla/dom/telephony/TelephonyPublic.h"
 #include "nsIDOMTelephony.h"
+#endif
 
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gDOMLeakPRLog;
@@ -10751,7 +10753,7 @@ NS_INTERFACE_MAP_BEGIN(nsNavigator)
   NS_INTERFACE_MAP_ENTRY(nsIDOMClientInformation)
   NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorGeolocation)
   NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorDesktopNotification)
-  NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorTelephony)
+  //NS_INTERFACE_MAP_ENTRY(nsIDOMNavigatorTelephony)
   NS_DOM_INTERFACE_MAP_ENTRY_CLASSINFO(Navigator)
 NS_INTERFACE_MAP_END
 
@@ -10780,10 +10782,12 @@ nsNavigator::SetDocShell(nsIDocShell *aDocShell)
     mNotification = nsnull;
   }
 
+#if 0
   if (mTelephony)
   {
     mTelephony = nsnull;
   }
+#endif
 }
 
 //*****************************************************************************
@@ -11471,10 +11475,10 @@ NS_IMETHODIMP nsNavigator::GetMozNotification(nsIDOMDesktopNotificationCenter **
 //    nsNavigator::nsIDOMNavigatorTelephony
 //*****************************************************************************
 
+#if 0
 NS_IMETHODIMP
 nsNavigator::GetMozTelephony(nsIDOMTelephony **aTelephony)
 {
-#if 0
   nsCOMPtr<nsIDOMTelephony> telephony = mTelephony;
 
   if (!telephony) {
@@ -11490,10 +11494,9 @@ nsNavigator::GetMozTelephony(nsIDOMTelephony **aTelephony)
 
   telephony.forget(aTelephony);
   return NS_OK;
-#else
   return NS_ERROR_NOT_IMPLEMENTED;
-#endif
 }
+#endif
 
 #define EVENT(name_, id_, type_, struct_)                                    \
   NS_IMETHODIMP nsGlobalWindow::GetOn##name_(JSContext *cx,                  \
