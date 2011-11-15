@@ -46,6 +46,8 @@
 #define TELEPHONYRADIO_CID \
   {0xa5c3a6de, 0x84c4, 0x4b15, {0x86, 0x11, 0x8a, 0xeb, 0x8d, 0x97, 0xf8, 0xba}}
 
+class nsIXPConnectJSObjectHolder;
+
 BEGIN_TELEPHONY_NAMESPACE
 
 class Radio : public RadioBase

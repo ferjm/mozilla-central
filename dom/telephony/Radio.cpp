@@ -38,8 +38,14 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "Radio.h"
+#include "nsITelephonyWorker.h"
+#include "nsContentUtils.h"
+#include "nsIXPConnect.h"
+#include "nsIJSContextStack.h"
 
 #include "nsThreadUtils.h"
+
+static NS_DEFINE_CID(kTelephonyWorkerCID, NS_TELEPHONYWORKER_CID);
 
 // Topic we listen to for shutdown.
 #define PROFILE_BEFORE_CHANGE_TOPIC "profile-before-change"
@@ -70,7 +76,9 @@ Radio::~Radio()
 nsresult
 Radio::Init()
 {
-  nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(NS_TELEPHONYWORKER_CID));
+  NS_ASSERTION(NS_IsMainThread(), "We can only initialize on the main thread");
+
+  nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(kTelephonyWorkerCID));
   if (!worker) {
     return NS_ERROR_FAILURE;
   }
@@ -79,16 +87,17 @@ Radio::Init()
   nsresult rv = worker->GetWorker(&workerval);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  NS_ASSERT(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
+  NS_ASSERTION(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
   JSContext *cx;
-  nsIXPConnect *xpc = nsContentUtils::XPConnect();
-  rv = xpc->GetSafeJSContext(&cx);
+  rv = nsContentUtils::ThreadJSContextStack()->GetSafeJSContext(&cx);
   NS_ENSURE_SUCCESS(rv, rv);
   if (!cx) {
     return NS_ERROR_FAILURE;
   }
 
-  rv = xpc->HoldObject(cx, JSVAL_TO_OBJECT(workerval), getter_AddRefs(mWorker));
+  rv = nsContentUtils::XPConnect()->HoldObject(cx,
+                                               JSVAL_TO_OBJECT(workerval),
+                                               getter_AddRefs(mWorker));
   NS_ENSURE_SUCCESS(rv, rv);
   return NS_OK;
 }

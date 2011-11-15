@@ -82,6 +82,8 @@ LOCAL_INCLUDES = \
   nsITelephoneCall.idl \
   $(NULL)
 
+DIRS += worker-component
+
 ifdef ENABLE_TESTS
 DIRS += test
 endif
