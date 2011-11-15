@@ -1,5 +1,3 @@
-/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
-/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -37,80 +35,32 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "Radio.h"
+Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
-#include "nsThreadUtils.h"
+const DEBUG = false; /* set to false to suppress debug messages */
 
-// Topic we listen to for shutdown.
-#define PROFILE_BEFORE_CHANGE_TOPIC "profile-before-change"
+const TELEPHONYWORKER_CONTRACTID        = "@mozilla.org/telephony/worker;1";
+const TELEPHONYWORKER_CID               = Components.ID("{2d831c8d-6017-435b-a80c-e5d422810cea}");
+const nsITelephonyWorker                = Components.interfaces.nsISidebar;
 
-USING_TELEPHONY_NAMESPACE
-
-namespace {
-
-// Doesn't carry a reference, we're owned by services.
-Radio* gInstance = nsnull;
-
-} // anonymous namespace
-
-Radio::Radio()
+function nsTelephonyWorker()
 {
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-  NS_ASSERTION(!gInstance, "There should only be one instance!");
+    this.worker = new ChromeWorker();
 }
 
-Radio::~Radio()
-{
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-  NS_ASSERTION(!gInstance || gInstance == this,
-               "There should only be one instance!");
-  gInstance = nsnull;
-}
+nsTelephonyWorker.prototype.classID = TELEPHONYWORKER_CID;
 
-nsresult
-Radio::Init()
-{
-  nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(NS_TELEPHONYWORKER_CID));
-  if (!worker) {
-    return NS_ERROR_FAILURE;
-  }
+nsTelephonyWorker.prototype.classInfo = XPCOMUtils.generateCI({classID: TELEPHONYWORKER_CID,
+                                                       contractID: TELEPHONYWORKER_CONTRACTID,
+                                                       classDescription: "TelephonyWorker",
+                                                       interfaces: [nsITelephonyWorker]});
 
-  jsval workerval;
-  nsresult rv = worker->GetWorker(&workerval);
-  NS_ENSURE_SUCCESS(rv, rv);
+nsTelephonyWorker.prototype.QueryInterface = XPCOMUtils.generateQI([nsITelephonyWorker]);
 
-  NS_ASSERT(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
-  JSContext *cx;
-  nsIXPConnect *xpc = nsContentUtils::XPConnect();
-  rv = xpc->GetSafeJSContext(&cx);
-  NS_ENSURE_SUCCESS(rv, rv);
-  if (!cx) {
-    return NS_ERROR_FAILURE;
-  }
+var NSGetFactory = XPCOMUtils.generateNSGetFactory([nsTelephonyWorker]);
 
-  rv = xpc->HoldObject(cx, JSVAL_TO_OBJECT(workerval), getter_AddRefs(mWorker));
-  NS_ENSURE_SUCCESS(rv, rv);
-  return NS_OK;
-}
-
-// static
-already_AddRefed<Radio>
-Radio::FactoryCreate()
-{
-  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
-
-  nsRefPtr<Radio> instance(gInstance);
-
-  if (!instance) {
-    instance = new Radio();
-    if (NS_FAILED(instance->Init())) {
-      return nsnull;
-    }
-
-    gInstance = instance;
-  }
-
-  return instance.forget();
-}
-
-NS_IMPL_ISUPPORTS_INHERITED0(Radio, RadioBase)
+/* static functions */
+if (DEBUG)
+    debug = function (s) { dump("-*- TelephonyWorker component: " + s + "\n"); }
+else
+    debug = function (s) {}

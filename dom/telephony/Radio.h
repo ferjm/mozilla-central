@@ -61,6 +61,8 @@ public:
 protected:
   Radio();
   ~Radio();
+
+  nsCOMPtr<nsIXPConnectJSObjectHolder> mWorker;
 };
 
 END_TELEPHONY_NAMESPACE
