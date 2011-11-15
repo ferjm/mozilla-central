@@ -41,11 +41,11 @@ const DEBUG = false; /* set to false to suppress debug messages */
 
 const TELEPHONYWORKER_CONTRACTID        = "@mozilla.org/telephony/worker;1";
 const TELEPHONYWORKER_CID               = Components.ID("{2d831c8d-6017-435b-a80c-e5d422810cea}");
-const nsITelephonyWorker                = Components.interfaces.nsISidebar;
+const nsITelephonyWorker                = Components.interfaces.nsITelephonyWorker;
 
 function nsTelephonyWorker()
 {
-    this.worker = new ChromeWorker();
+    this.worker = new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
 }
 
 nsTelephonyWorker.prototype.classID = TELEPHONYWORKER_CID;
