@@ -45,9 +45,7 @@ include $(DEPTH)/config/autoconf.mk
 EXTRA_COMPONENTS = nsTelephonyWorker.manifest
 EXTRA_PP_COMPONENTS = nsTelephonyWorker.js
 
-MODULES		= dom
-XPIDL_MODULE	= dom_base
-GRE_MODULE	= 1
+XPIDL_MODULE	= dom_telephony
 XPIDLSRCS	= nsITelephonyWorker.idl
 
 include $(topsrcdir)/config/rules.mk

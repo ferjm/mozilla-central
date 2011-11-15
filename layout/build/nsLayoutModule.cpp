@@ -955,7 +955,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kNS_DOMJSON_CID, false, NULL, NS_NewJSON },
   { &kNS_TEXTEDITOR_CID, false, NULL, nsPlaintextEditorConstructor },
   { &kINDEXEDDB_MANAGER_CID, false, NULL, IndexedDatabaseManagerConstructor },
-  { &kTELEPHONYRADIO_CID, false, NULL, RadioConstructor },
+  { &kTELEPHONYRADIO_CID, true, NULL, RadioConstructor },
 #ifdef ENABLE_EDITOR_API_LOG
   { &kNS_HTMLEDITOR_CID, false, NULL, nsHTMLEditorLogConstructor },
 #else
@@ -1144,7 +1144,7 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
 
   // This probably should be "app-startup" but we want our testing extension to
   // be able to override the contractid so we wait until "profile-after-change".
-  { "profile-after-change", "Telephony Radio", "service," TELEPHONYRADIO_CONTRACTID },
+  { "profile-after-change", "Telephony Radio", TELEPHONYRADIO_CONTRACTID },
   { NULL }
 };
 
