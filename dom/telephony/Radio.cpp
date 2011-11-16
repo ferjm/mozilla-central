@@ -57,6 +57,59 @@ namespace {
 // Doesn't carry a reference, we're owned by services.
 Radio* gInstance = nsnull;
 
+JSBool
+ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
+{
+  jsval *argv = JS_ARGV(cx, vp);
+
+  JS_ASSERT(argc == 1);
+  JSObject *eventobj = JSVAL_TO_OBJECT(argv[0]);
+
+  jsval v;
+  if (!JS_GetProperty(cx, eventobj, "data", &v)) {
+    return false;
+  }
+
+  JSAutoByteString abs(cx, JSVAL_TO_STRING(v));
+  printf("Received from worker: %s\n", abs.ptr());
+  return true;
+}
+
+JSBool
+HandleError(JSContext *cx, uintN argc, jsval *vp)
+{
+  jsval *argv = JS_ARGV(cx, vp);
+
+  JS_ASSERT(argc == 1);
+  JSObject *eventobj = JSVAL_TO_OBJECT(argv[0]);
+
+  jsval callee_argv;
+  if (!JS_CallFunctionName(cx, eventobj, "preventDefault", 0, &callee_argv,
+                           &callee_argv)) {
+    return false;
+  }
+
+  printf("Got an error!\n");
+  return true;
+}
+
+nsresult
+SetHandler(JSContext *cx, JSObject *workerobj, JSNative native, const char *name)
+{
+  JSFunction *fun = JS_NewFunction(cx, native, 1, 0,
+                                   JS_GetGlobalForObject(cx, workerobj), name);
+  if (!fun) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  jsval v = OBJECT_TO_JSVAL(JS_GetFunctionObject(fun));
+  if (!JS_SetProperty(cx, workerobj, name, &v)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return NS_OK;
+}
+
 } // anonymous namespace
 
 Radio::Radio()
@@ -95,10 +148,27 @@ Radio::Init()
     return NS_ERROR_FAILURE;
   }
 
-  rv = nsContentUtils::XPConnect()->HoldObject(cx,
-                                               JSVAL_TO_OBJECT(workerval),
+  JSObject *workerobj = JSVAL_TO_OBJECT(workerval);
+  rv = nsContentUtils::XPConnect()->HoldObject(cx, workerobj,
                                                getter_AddRefs(mWorker));
   NS_ENSURE_SUCCESS(rv, rv);
+
+  JSAutoRequest ar(cx);
+  JSAutoEnterCompartment ac;
+  if (!ac.enter(cx, workerobj)) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  rv = SetHandler(cx, workerobj, HandleError, "onerror");
+  NS_ENSURE_SUCCESS(rv, rv);
+  rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // Poke!
+  jsval argv = JSVAL_VOID;
+  if (!JS_CallFunctionName(cx, workerobj, "postMessage", 1, &argv, &argv)) {
+    return NS_ERROR_FAILURE;
+  }
   return NS_OK;
 }
 
