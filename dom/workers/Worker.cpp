@@ -135,10 +135,10 @@ public:
     SetJSPrivateSafeish(aCx, aObj, NULL);
   }
 
-protected:
   static WorkerPrivate*
   GetInstancePrivate(JSContext* aCx, JSObject* aObj, const char* aFunctionName);
 
+protected:
   static JSBool
   ConstructInternal(JSContext* aCx, uintN aArgc, jsval* aVp,
                     bool aIsChromeWorker)
@@ -435,9 +435,11 @@ Worker::GetInstancePrivate(JSContext* aCx, JSObject* aObj,
     }
   }
 
-  JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL, JSMSG_INCOMPATIBLE_PROTO,
-                       sClass.name, aFunctionName,
-                       classPtr ? classPtr->name : "object");
+  if (aFunctionName) {
+    JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL, JSMSG_INCOMPATIBLE_PROTO,
+                         sClass.name, aFunctionName,
+                         classPtr ? classPtr->name : "object");
+  }
   return NULL;
 }
 
@@ -466,6 +468,12 @@ ClearPrivateSlot(JSContext* aCx, JSObject* aObj, bool aSaveEventHandlers)
   else {
     Worker::ClearPrivateSlot(aCx, aObj, aSaveEventHandlers);
   }
+}
+
+WorkerPrivate*
+GetInstancePrivate(JSContext* aCx, JSObject* aObj)
+{
+  return Worker::GetInstancePrivate(aCx, aObj, NULL);
 }
 
 } // namespace worker

@@ -465,6 +465,17 @@ ResumeWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow)
   }
 }
 
+WorkerCrossThreadDispatcher*
+GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker)
+{
+  if (!JSVAL_IS_OBJECT(aWorker))
+    return NULL;
+  WorkerPrivate* w = worker::GetInstancePrivate(aCx, JSVAL_TO_OBJECT(aWorker));
+  if (!w)
+    return NULL;
+  return w->GetCrossThreadDispatcher();
+}
+
 END_WORKERS_NAMESPACE
 
 PRUint32 RuntimeService::sDefaultJSContextOptions = kRequiredJSContextOptions;

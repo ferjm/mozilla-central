@@ -40,6 +40,9 @@
 #define mozilla_dom_workers_workers_h__
 
 #include "jspubtd.h"
+#include "jsapi.h"
+#include "nsISupportsImpl.h"
+#include "mozilla/Mutex.h"
 
 #define BEGIN_WORKERS_NAMESPACE \
   namespace mozilla { namespace dom { namespace workers {
@@ -51,6 +54,8 @@
 class nsPIDOMWindow;
 
 BEGIN_WORKERS_NAMESPACE
+
+class WorkerPrivate;
 
 struct PrivatizableBase
 { };
@@ -77,6 +82,29 @@ SuspendWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow);
 
 void
 ResumeWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow);
+
+class WorkerCrossThreadDispatcher {
+public:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(WorkerCrossThreadDispatcher)
+
+  WorkerCrossThreadDispatcher(WorkerPrivate* aPrivate) :
+    mMutex("WorkerCrossThreadDispatcher"), mPrivate(aPrivate) {}
+  void Forget()
+  {
+    mozilla::MutexAutoLock lock(mMutex);
+    mPrivate = nsnull;
+  }
+
+protected:
+  friend class WorkerPrivate;
+
+  // Must be acquired *before* the WorkerPrivate's mutex, when they're both held.
+  mozilla::Mutex mMutex;
+  WorkerPrivate* mPrivate;
+};
+
+WorkerCrossThreadDispatcher*
+GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker);
 
 END_WORKERS_NAMESPACE
 
