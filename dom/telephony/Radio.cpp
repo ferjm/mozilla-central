@@ -1,5 +1,5 @@
 /* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
-/* vim: set ts=2 et sw=2 tw=40: */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -42,8 +42,11 @@
 #include "nsContentUtils.h"
 #include "nsIXPConnect.h"
 #include "nsIJSContextStack.h"
+#include "mozilla/dom/workers/Workers.h"
 
 #include "nsThreadUtils.h"
+
+USING_WORKERS_NAMESPACE
 
 static NS_DEFINE_CID(kTelephonyWorkerCID, NS_TELEPHONYWORKER_CID);
 
@@ -110,6 +113,39 @@ SetHandler(JSContext *cx, JSObject *workerobj, JSNative native, const char *name
   return NS_OK;
 }
 
+class ConnectWorkerToRIL : public WorkerTask {
+public:
+  virtual void RunTask(JSContext *aCx);
+};
+
+JSBool
+PostToRIL(JSContext *cx, uintN argc, jsval *vp)
+{
+  NS_ASSERTION(!NS_IsMainThread(), "Expecting to be on the worker thread");
+  // TODO Convert arguments to a RilMessage and call SendRilMessage.
+  JSAutoByteString abs(cx, JSVAL_TO_STRING(vp[2]));
+  printf("Heading to RIL: %s\n", abs.ptr());
+  return true;
+}
+
+void
+ConnectWorkerToRIL::RunTask(JSContext *aCx)
+{
+  NS_ASSERTION(!NS_IsMainThread(), "Expecting to be on the worker thread");
+  NS_ASSERTION(!JS_IsRunning(aCx), "Are we being called somehow?");
+  JSObject *workerGlobal = JS_GetGlobalObject(aCx);
+
+  JSAutoRequest ar(aCx);
+  JSAutoEnterCompartment ac;
+  if (!ac.enter(aCx, workerGlobal)) {
+    return;
+  }
+
+  if (!JS_DefineFunction(aCx, workerGlobal, "postRILMessage", PostToRIL, 1, 0)) {
+    return;
+  }
+}
+
 } // anonymous namespace
 
 Radio::Radio()
@@ -165,6 +201,16 @@ Radio::Init()
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Poke!
+  WorkerCrossThreadDispatcher *wctd = GetWorkerCrossThreadDispatcher(cx, workerval);
+  if (!wctd) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsRefPtr<ConnectWorkerToRIL> workerTask = new ConnectWorkerToRIL();
+  if (!wctd->PostTask(workerTask)) {
+    return NS_ERROR_FAILURE;
+  }
+
   jsval argv = JSVAL_VOID;
   if (!JS_CallFunctionName(cx, workerobj, "postMessage", 1, &argv, &argv)) {
     return NS_ERROR_FAILURE;

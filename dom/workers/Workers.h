@@ -83,6 +83,15 @@ SuspendWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow);
 void
 ResumeWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow);
 
+class WorkerTask {
+public:
+    NS_INLINE_DECL_THREADSAFE_REFCOUNTING(WorkerTask)
+
+    virtual ~WorkerTask() { }
+
+    virtual void RunTask(JSContext* aCx) = 0;
+};
+
 class WorkerCrossThreadDispatcher {
 public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(WorkerCrossThreadDispatcher)
@@ -94,6 +103,18 @@ public:
     mozilla::MutexAutoLock lock(mMutex);
     mPrivate = nsnull;
   }
+
+  /**
+   * Generically useful function for running a bit of C++ code on the worker
+   * thread.
+   */
+  bool PostTask(WorkerTask* aTask);
+
+  /**
+   * XXX Need a more generic mechanism for dispatching custom events to worker
+   * threads from non-worker threads.
+   */
+  bool DispatchRILEvent(const char* aData);
 
 protected:
   friend class WorkerPrivate;

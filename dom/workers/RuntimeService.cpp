@@ -476,6 +476,47 @@ GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker)
   return w->GetCrossThreadDispatcher();
 }
 
+class WorkerTaskRunnable : public WorkerRunnable
+{
+public:
+  WorkerTaskRunnable(WorkerPrivate* aPrivate, WorkerTask* aTask)
+    // XXX Is ModifyBusyCount correct?
+    : WorkerRunnable(aPrivate, WorkerThread, ModifyBusyCount),
+      mTask(aTask)
+  { }
+
+  virtual bool WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate);
+
+private:
+  nsRefPtr<WorkerTask> mTask;
+};
+
+bool
+WorkerTaskRunnable::WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
+{
+  mTask->RunTask(aCx);
+  return true;
+}
+
+bool
+WorkerCrossThreadDispatcher::PostTask(WorkerTask* aTask)
+{
+  mozilla::MutexAutoLock lock(mMutex);
+  if (!mPrivate)
+    return false;
+
+  nsRefPtr<WorkerTaskRunnable> runnable = new WorkerTaskRunnable(mPrivate, aTask);
+  runnable->Dispatch(nsnull);
+  return true;
+}
+
+bool
+WorkerCrossThreadDispatcher::DispatchRILEvent(const char* aData)
+{
+  // TODO Implement me!
+  return false;
+}
+
 END_WORKERS_NAMESPACE
 
 PRUint32 RuntimeService::sDefaultJSContextOptions = kRequiredJSContextOptions;
