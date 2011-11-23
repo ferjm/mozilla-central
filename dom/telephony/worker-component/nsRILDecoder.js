@@ -5,7 +5,8 @@ onmessage = function () {
 }
 
 function DoRIL(evt) {
-    postMessage(Array.prototype.join.call([String.fromCharCode(i) for each (i in evt.data)], ","));
+    var asChars = [String.fromCharCode(evt.data[i]) for (i in evt.data)];
+    postMessage(asChars.toString(''));
 }
 
 addEventListener("RILMessageEvent", DoRIL, false, false);
