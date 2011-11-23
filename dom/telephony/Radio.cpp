@@ -173,13 +173,16 @@ Radio::Init()
 {
   NS_ASSERTION(NS_IsMainThread(), "We can only initialize on the main thread");
 
+  nsresult rv = RadioBase::Init();
+  NS_ENSURE_SUCCESS(rv, rv);
+
   nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(kTelephonyWorkerCID));
   if (!worker) {
     return NS_ERROR_FAILURE;
   }
 
   jsval workerval;
-  nsresult rv = worker->GetWorker(&workerval);
+  rv = worker->GetWorker(&workerval);
   NS_ENSURE_SUCCESS(rv, rv);
 
   NS_ASSERTION(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
@@ -224,6 +227,13 @@ Radio::Init()
 
   wctd->DispatchRILEvent("abcd", sizeof("abcd") - 1);
   return NS_OK;
+}
+
+void
+Radio::Shutdown()
+{
+  mWorker = nsnull;
+  RadioBase::Shutdown();
 }
 
 // static

@@ -65,6 +65,18 @@ RadioBase::~RadioBase()
 nsresult
 RadioBase::Init()
 {
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+
+  nsCOMPtr<nsIObserverService> obs =
+    do_GetService(NS_OBSERVERSERVICE_CONTRACTID);
+  if (!obs) {
+    NS_WARNING("Failed to get observer service!");
+    return NS_ERROR_FAILURE;
+  }
+
+  nsresult rv = obs->AddObserver(this, PROFILE_BEFORE_CHANGE_TOPIC, false);
+  NS_ENSURE_SUCCESS(rv, rv);
+
   return NS_OK;
 }
 
@@ -76,4 +88,26 @@ RadioBase::Shutdown()
   mShutdown = true;
 }
 
-NS_IMPL_ISUPPORTS0(RadioBase)
+NS_IMPL_ISUPPORTS1(RadioBase, nsIObserver)
+
+NS_IMETHODIMP
+RadioBase::Observe(nsISupports* aSubject, const char* aTopic,
+                   const PRUnichar* aData)
+{
+  if (!strcmp(aTopic, PROFILE_BEFORE_CHANGE_TOPIC)) {
+    Shutdown();
+
+    nsCOMPtr<nsIObserverService> obs =
+      do_GetService(NS_OBSERVERSERVICE_CONTRACTID);
+    if (obs) {
+      if (NS_FAILED(obs->RemoveObserver(this, aTopic))) {
+        NS_WARNING("Failed to remove observer!");
+      }
+    }
+    else {
+      NS_WARNING("Failed to get observer service!");
+    }
+  }
+
+  return NS_OK;
+}

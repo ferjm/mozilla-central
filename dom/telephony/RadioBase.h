@@ -41,18 +41,20 @@
 #define mozilla_dom_telephony_radiobase_h__
 
 #include "TelephonyCommon.h"
+#include "nsIObserver.h"
 
 #define TELEPHONYRADIO_CONTRACTID "@mozilla.org/telephony/radio;1"
 
 BEGIN_TELEPHONY_NAMESPACE
 
-class RadioBase : public nsISupports
+class RadioBase : public nsIObserver
 {
 protected:
   bool mShutdown;
 
 public:
   NS_DECL_ISUPPORTS
+  NS_DECL_NSIOBSERVER
 
   virtual nsresult
   Init();

@@ -56,6 +56,7 @@ public:
   NS_DECL_ISUPPORTS_INHERITED
 
   virtual nsresult Init();
+  virtual void Shutdown();
 
   static already_AddRefed<Radio>
   FactoryCreate();
