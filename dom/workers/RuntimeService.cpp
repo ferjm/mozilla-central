@@ -491,6 +491,45 @@ private:
   nsRefPtr<WorkerTask> mTask;
 };
 
+class RILMessageEventRunnable : public WorkerRunnable
+{
+public:
+  RILMessageEventRunnable(WorkerPrivate* aPrivate, const char *aData, size_t aSize)
+    : WorkerRunnable(aPrivate, WorkerThread, UnchangedBusyCount),
+      mData(aData),
+      mSize(aSize)
+  { }
+
+  bool
+  PreDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
+  {
+    return true;
+  }
+
+  bool
+  WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
+  {
+    JSObject* eventobj = events::CreateRILMessageEvent(aCx, mData, mSize);
+    if (!eventobj) {
+      return false;
+    }
+
+    bool preventDefault;
+    JSObject* target = JS_GetGlobalObject(aCx);
+    return events::DispatchEventToTarget(aCx, target, eventobj, &preventDefault);
+  }
+
+  void
+    PostDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate,
+                 bool aDispatchResult)
+    {
+    }
+
+private:
+  const char *mData;
+  size_t mSize;
+};
+
 bool
 WorkerTaskRunnable::WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
 {
@@ -511,10 +550,16 @@ WorkerCrossThreadDispatcher::PostTask(WorkerTask* aTask)
 }
 
 bool
-WorkerCrossThreadDispatcher::DispatchRILEvent(const char* aData)
+WorkerCrossThreadDispatcher::DispatchRILEvent(const char* aData, size_t aSize)
 {
-  // TODO Implement me!
-  return false;
+  mozilla::MutexAutoLock lock(mMutex);
+  if (!mPrivate)
+    return false;
+
+  nsRefPtr<RILMessageEventRunnable> runnable =
+    new RILMessageEventRunnable(mPrivate, aData, aSize);
+  runnable->Dispatch(nsnull);
+  return true;
 }
 
 END_WORKERS_NAMESPACE

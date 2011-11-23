@@ -71,6 +71,9 @@ JSObject*
 CreateProgressEvent(JSContext* aCx, JSString* aType, bool aLengthComputable,
                     jsdouble aLoaded, jsdouble aTotal);
 
+JSObject*
+CreateRILMessageEvent(JSContext* aCx, const char* aData, size_t aSize);
+
 bool
 IsSupportedEventClass(JSContext* aCx, JSObject* aEvent);
 

@@ -92,7 +92,13 @@ HandleError(JSContext *cx, uintN argc, jsval *vp)
     return false;
   }
 
-  printf("Got an error!\n");
+  jsval message;
+  if (!JS_GetProperty(cx, eventobj, "message", &message)) {
+    return false;
+  }
+
+  JSAutoByteString abs(cx, JSVAL_TO_STRING(message));
+  printf("Got an error: %s\n", abs.ptr());
   return true;
 }
 
@@ -215,6 +221,8 @@ Radio::Init()
   if (!JS_CallFunctionName(cx, workerobj, "postMessage", 1, &argv, &argv)) {
     return NS_ERROR_FAILURE;
   }
+
+  wctd->DispatchRILEvent("abcd", sizeof("abcd") - 1);
   return NS_OK;
 }
 

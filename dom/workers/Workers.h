@@ -114,7 +114,7 @@ public:
    * XXX Need a more generic mechanism for dispatching custom events to worker
    * threads from non-worker threads.
    */
-  bool DispatchRILEvent(const char* aData);
+  bool DispatchRILEvent(const char* aData, size_t aSize);
 
 protected:
   friend class WorkerPrivate;
