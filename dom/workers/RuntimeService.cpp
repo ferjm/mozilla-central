@@ -476,6 +476,8 @@ GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker)
   return w->GetCrossThreadDispatcher();
 }
 
+namespace {
+
 class WorkerTaskRunnable : public WorkerRunnable
 {
 public:
@@ -535,6 +537,8 @@ WorkerTaskRunnable::WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
 {
   mTask->RunTask(aCx);
   return true;
+}
+
 }
 
 bool
