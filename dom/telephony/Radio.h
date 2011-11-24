@@ -41,6 +41,7 @@
 #define mozilla_dom_telephony_radio_h__
 
 #include "RadioBase.h"
+#include "mozilla/ipc/Ril.h"
 
 // {a5c3a6de-84c4-4b15-8611-8aeb8d97f8ba}
 #define TELEPHONYRADIO_CID \

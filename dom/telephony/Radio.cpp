@@ -47,6 +47,7 @@
 #include "nsThreadUtils.h"
 
 USING_WORKERS_NAMESPACE
+using namespace mozilla::ipc;
 
 static NS_DEFINE_CID(kTelephonyWorkerCID, NS_TELEPHONYWORKER_CID);
 
@@ -169,6 +170,21 @@ ConnectWorkerToRIL::RunTask(JSContext *aCx)
   }
 }
 
+class RILReceiver : public RilConsumer
+{
+public:
+  RILReceiver(WorkerCrossThreadDispatcher *aDispatcher)
+    : mDispatcher(aDispatcher)
+  { }
+
+  virtual void MessageReceived(RilMessage *aMessage) {
+    mDispatcher->DispatchRILEvent(aMessage->mData, aMessage->mSize);
+  }
+
+private:
+  nsRefPtr<WorkerCrossThreadDispatcher> mDispatcher;
+};
+
 } // anonymous namespace
 
 Radio::Radio()
@@ -223,6 +239,11 @@ Radio::Init()
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
+  WorkerCrossThreadDispatcher *wctd = GetWorkerCrossThreadDispatcher(cx, workerval);
+  if (!wctd) {
+    return NS_ERROR_FAILURE;
+  }
+
   // If an exception is thrown on the worker, it bubbles out to the component
   // that created it. If that component doesn't have an onerror handler, the
   // worker will try to call the error reporter on the context it was created
@@ -234,12 +255,17 @@ Radio::Init()
   rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
   NS_ENSURE_SUCCESS(rv, rv);
 
+  // Now that we're set up, connect ourselves to the RIL thread.
+  mozilla::RefPtr<RILReceiver> receiver = new RILReceiver(wctd);
+  StartRil(receiver);
+
   return NS_OK;
 }
 
 void
 Radio::Shutdown()
 {
+  StopRil();
   mWorker = nsnull;
   RadioBase::Shutdown();
 }

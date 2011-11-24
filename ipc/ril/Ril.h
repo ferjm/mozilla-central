@@ -53,9 +53,10 @@ namespace ipc {
 
 struct RilMessage
 {
-    /*
-     * XXX IMPLEMENT ME
-     */
+    const char *mData;
+
+    // Number of octets in mData.
+    const size_t mSize;
 };
 
 class RilConsumer : public RefCounted<RilConsumer>

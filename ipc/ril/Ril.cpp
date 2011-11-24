@@ -278,6 +278,8 @@ StopRil()
 
         lock.Wait();
     }
+
+    sConsumer = nsnull;
 }
 
 
