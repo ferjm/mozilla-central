@@ -60,6 +60,7 @@ namespace {
 // Doesn't carry a reference, we're owned by services.
 Radio* gInstance = nsnull;
 
+// Called when the worker wants to talk to the DOM.
 JSBool
 ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -73,11 +74,18 @@ ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
     return false;
   }
 
+  // XXX Need to figure out what the protocol looks like here. Since we're doing
+  // this in C++, it'll probably be something like "an object with a given
+  // property specifying the type of event and another property with data about
+  // the event.
   JSAutoByteString abs(cx, JSVAL_TO_STRING(v));
   printf("Received from worker: %s\n", abs.ptr());
   return true;
 }
 
+// Called when the worker throws an exception. This should never happen.
+// For now printf the exception. It might be worth throwing something up on the
+// developer console, though.
 JSBool
 HandleError(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -92,13 +100,20 @@ HandleError(JSContext *cx, uintN argc, jsval *vp)
     return false;
   }
 
-  jsval message;
-  if (!JS_GetProperty(cx, eventobj, "message", &message)) {
+  jsval filenameval;
+  jsval messageval;
+  jsval linenoval;
+  if (!JS_GetProperty(cx, eventobj, "filename", &filenameval) ||
+      !JS_GetProperty(cx, eventobj, "lineno", &linenoval) ||
+      !JS_GetProperty(cx, eventobj, "message", &messageval)) {
     return false;
   }
 
-  JSAutoByteString abs(cx, JSVAL_TO_STRING(message));
-  printf("Got an error: %s\n", abs.ptr());
+  // message must be a string.
+  JSAutoByteString filenameabs(cx, JSVAL_TO_STRING(filenameval));
+  JSAutoByteString messageabs(cx, JSVAL_TO_STRING(messageval));
+  printf("Got an error: %s:%d: %s\n",
+         filenameabs.ptr(), JSVAL_TO_INT(linenoval), messageabs.ptr());
   return true;
 }
 
@@ -137,6 +152,8 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
 void
 ConnectWorkerToRIL::RunTask(JSContext *aCx)
 {
+  // Set up the postRILMessage on the function for worker -> RIL thread
+  // communication.
   NS_ASSERTION(!NS_IsMainThread(), "Expecting to be on the worker thread");
   NS_ASSERTION(!JS_IsRunning(aCx), "Are we being called somehow?");
   JSObject *workerGlobal = JS_GetGlobalObject(aCx);
@@ -176,6 +193,8 @@ Radio::Init()
   nsresult rv = RadioBase::Init();
   NS_ENSURE_SUCCESS(rv, rv);
 
+  // The telephony worker component is a hack that gives us a global object for
+  // our own functions and makes creating the worker possible.
   nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(kTelephonyWorkerCID));
   if (!worker) {
     return NS_ERROR_FAILURE;
@@ -204,28 +223,17 @@ Radio::Init()
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
+  // If an exception is thrown on the worker, it bubbles out to the component
+  // that created it. If that component doesn't have an onerror handler, the
+  // worker will try to call the error reporter on the context it was created
+  // on. However, That doesn't work for component contexts and can result in
+  // crashes. This onerror handler has to make sure that it calls preventDefault
+  // on the incoming event.
   rv = SetHandler(cx, workerobj, HandleError, "onerror");
   NS_ENSURE_SUCCESS(rv, rv);
   rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
   NS_ENSURE_SUCCESS(rv, rv);
 
-  // Poke!
-  WorkerCrossThreadDispatcher *wctd = GetWorkerCrossThreadDispatcher(cx, workerval);
-  if (!wctd) {
-    return NS_ERROR_FAILURE;
-  }
-
-  nsRefPtr<ConnectWorkerToRIL> workerTask = new ConnectWorkerToRIL();
-  if (!wctd->PostTask(workerTask)) {
-    return NS_ERROR_FAILURE;
-  }
-
-  jsval argv = JSVAL_VOID;
-  if (!JS_CallFunctionName(cx, workerobj, "postMessage", 1, &argv, &argv)) {
-    return NS_ERROR_FAILURE;
-  }
-
-  wctd->DispatchRILEvent("abcd", sizeof("abcd") - 1);
   return NS_OK;
 }
 
