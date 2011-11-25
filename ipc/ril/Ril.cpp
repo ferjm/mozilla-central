@@ -229,7 +229,7 @@ DisconnectFromRil(Monitor* aMonitor)
 bool
 StartRil(RilConsumer* aConsumer)
 {
-    MOZ_ASSERT(!aConsumer);
+    MOZ_ASSERT(aConsumer);
     sConsumer = aConsumer;
 
     Monitor monitor("StartRil.monitor");
