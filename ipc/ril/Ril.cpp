@@ -116,17 +116,31 @@ RilClient::OpenSocket()
     /*
      * XXX IMPLEMENT ME
      *
-     * I guess we can keep using cutil, but it would be preferable to go
-     * straight to the posix socket API.
-     *
-    mSocket.mFd = socket_local_client(
-        kRilSocketName,
-        ANDROID_SOCKET_NAMESPACE_RESERVED,
-        SOCK_STREAM);
-    */
-    if (0 >= mSocket.mFd) {
+     * Currently using a network socket to test basic functionality
+     * before we see how this works on the phone.
+     */
+    struct hostent *hp;
+    struct sockaddr_in addr;
+    socklen_t alen;
+    int s;
+
+    hp = gethostbyname("localhost");
+    if(hp == 0) return -1;
+    
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = hp->h_addrtype;
+    addr.sin_port = htons(6200);
+    memcpy(&addr.sin_addr, hp->h_addr, hp->h_length);
+
+    mSocket.mFd = socket(hp->h_addrtype, SOCK_STREAM, 0);
+    if(s < 0) return -1;
+
+    if(connect(mSocket.mFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        printf("Cannot open network socket for RIL!");
+        close(mSocket.mFd);
         return false;
     }
+    printf("Network socket open for RIL");
 
     // Set close-on-exec bit.
     int flags = fcntl(mSocket.mFd, F_GETFD);
@@ -161,15 +175,22 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
 {
     MOZ_ASSERT(fd == mSocket.mFd);
 
-    /*
-     * IMPLEMENT ME
-     *
     while (true) {
         if (!mIncoming) {
             mIncoming = new RilMessage();
-
-            // read the message frame (whatever that means; need at least
-            // length)
+            int ret = read(fd, mIncoming->mData, 1024);
+            if(ret < 0)
+            {
+                printf("CAnnot read from network, error %d\n", ret);
+                return;
+            }
+            mIncoming->mSize = ret;
+            printf("RIL Read from network %d\n", mIncoming->mSize);
+            sConsumer->MessageReceived(mIncoming.forget());
+            if(ret < 1024)
+            {
+                return;
+            }
         }
 
         // Keep reading data until either
@@ -181,7 +202,6 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
         //     data available on the socket
         //     If so, break;
     }
-     */
 }
 
 void
@@ -191,9 +211,28 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
 
     /*
      * IMPLEMENT ME
-     *
+     */
     while (!mOutgoingQ.empty()) {
         RilMessage* msg = mOutgoingQ.front();
+        size_t writeOffset = 0;
+        const uint8_t *toWrite;
+
+        toWrite = (const uint8_t *)msg->mData;
+
+        while (writeOffset < msg->mSize) {
+            ssize_t written;
+            do {
+                written = write (fd, toWrite + writeOffset,
+                                 msg->mSize - writeOffset);
+            } while (written < 0 && errno == EINTR);
+            
+            if (written >= 0) {
+                writeOffset += written;
+            }
+            else {
+                printf("RIL can't write:%d", errno);
+                return;
+            }
 
         // Try to write the bytes of msg.  If all were written, continue.
         //
@@ -205,8 +244,10 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         //                                                  MessageLoopForIO::WATCH_WRITE,
         //                                                  &mWriteWatcher,
         //                                                  this);
+        }
+        mOutgoingQ.pop();
     }
-     */
+     
 }
 
 
@@ -229,7 +270,7 @@ DisconnectFromRil(Monitor* aMonitor)
 bool
 StartRil(RilConsumer* aConsumer)
 {
-    MOZ_ASSERT(!aConsumer);
+    //MOZ_ASSERT(!aConsumer);
     sConsumer = aConsumer;
 
     Monitor monitor("StartRil.monitor");
