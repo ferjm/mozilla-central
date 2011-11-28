@@ -65,6 +65,7 @@ Radio* gInstance = nsnull;
 JSBool
 ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
 {
+  NS_ASSERTION(NS_IsMainThread(), "postMessage posts to the main thread");
   jsval *argv = JS_ARGV(cx, vp);
 
   JS_ASSERT(argc == 1);
@@ -144,9 +145,31 @@ JSBool
 PostToRIL(JSContext *cx, uintN argc, jsval *vp)
 {
   NS_ASSERTION(!NS_IsMainThread(), "Expecting to be on the worker thread");
-  // TODO Convert arguments to a RilMessage and call SendRilMessage.
-  JSAutoByteString abs(cx, JSVAL_TO_STRING(vp[2]));
-  printf("Heading to RIL: %s\n", abs.ptr());
+
+  if (argc != 1) {
+    JS_ReportError(cx, "Expecting a single argument with the RIL message");
+    return false;
+  }
+
+  jsval v = JS_ARGV(cx, vp)[0];
+
+  nsAutoPtr<RilMessage> rm(new RilMessage());
+  if (JSVAL_IS_STRING(v)) {
+    JSString *str = JSVAL_TO_STRING(v);
+    JSFlatString *flatstr = JS_FlattenString(cx, str);
+    if (!flatstr) {
+      return false;
+    }
+
+    rm->mSize = JS_GetStringLength(str);
+    memcpy(rm->mData, JS_GetFlatStringChars(flatstr), rm->mSize);
+  } else {
+    // TODO Deal with typed arrays.
+    JS_ReportError(cx, "TODO typed arrays not yet handled.");
+  }
+
+  RilMessage *tosend = rm.forget();
+  JS_ALWAYS_TRUE(SendRilMessage(&tosend));
   return true;
 }
 
