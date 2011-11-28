@@ -4,9 +4,14 @@ onmessage = function () {
     setTimeout(function() { postMessage("test passed"); }, 10);
 }
 
+function terminate(s) {
+    return s[s.length - 1] == '\n' ? s : s + '\n';
+}
+
 function DoRIL(evt) {
     var asChars = [String.fromCharCode(evt.data[i]) for (i in evt.data)];
-    postMessage(asChars.toString(''));
+    postMessage(asChars.toString());
+    postRILMessage(terminate(asChars.join('').toUpperCase()));
 }
 
 addEventListener("RILMessageEvent", DoRIL, false, false);

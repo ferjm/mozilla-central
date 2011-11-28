@@ -257,11 +257,6 @@
 #include <android/log.h>
 #endif
 
-#if 0
-#include "mozilla/dom/telephony/TelephonyPublic.h"
-#include "nsIDOMTelephony.h"
-#endif
-
 #ifdef PR_LOGGING
 static PRLogModuleInfo* gDOMLeakPRLog;
 #endif

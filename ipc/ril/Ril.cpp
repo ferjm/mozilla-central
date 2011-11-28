@@ -121,12 +121,11 @@ RilClient::OpenSocket()
      */
     struct hostent *hp;
     struct sockaddr_in addr;
-    socklen_t alen;
     int s;
 
     hp = gethostbyname("localhost");
     if(hp == 0) return -1;
-    
+
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = hp->h_addrtype;
     addr.sin_port = htons(6200);
@@ -136,11 +135,11 @@ RilClient::OpenSocket()
     if(s < 0) return -1;
 
     if(connect(mSocket.mFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        printf("Cannot open network socket for RIL!");
+        printf("Cannot open network socket for RIL!\n");
         close(mSocket.mFd);
         return false;
     }
-    printf("Network socket open for RIL");
+    printf("Network socket open for RIL\n");
 
     // Set close-on-exec bit.
     int flags = fcntl(mSocket.mFd, F_GETFD);
@@ -161,7 +160,7 @@ RilClient::OpenSocket()
     MessageLoopForIO* ioLoop = MessageLoopForIO::current();
     if (!ioLoop->WatchFileDescriptor(mSocket.mFd,
                                      true,
-                                     MessageLoopForIO::WATCH_READ,
+                                     MessageLoopForIO::WATCH_READ_WRITE,
                                      &mReadWatcher,
                                      this)) {
         return false;
@@ -179,13 +178,13 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
         if (!mIncoming) {
             mIncoming = new RilMessage();
             int ret = read(fd, mIncoming->mData, 1024);
-            if(ret < 0)
+            if(ret <= 0)
             {
                 printf("CAnnot read from network, error %d\n", ret);
                 return;
             }
             mIncoming->mSize = ret;
-            printf("RIL Read from network %d\n", mIncoming->mSize);
+            printf("RIL Read from network %d\n", (int)mIncoming->mSize);
             sConsumer->MessageReceived(mIncoming.forget());
             if(ret < 1024)
             {
@@ -213,7 +212,7 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
      * IMPLEMENT ME
      */
     while (!mOutgoingQ.empty()) {
-        RilMessage* msg = mOutgoingQ.front();
+        nsAutoPtr<RilMessage> msg(mOutgoingQ.front());
         size_t writeOffset = 0;
         const uint8_t *toWrite;
 
@@ -230,7 +229,9 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
                 writeOffset += written;
             }
             else {
-                printf("RIL can't write:%d", errno);
+                // XXX?
+                mOutgoingQ.pop();
+                perror("RIL can't write");
                 return;
             }
 
@@ -291,12 +292,12 @@ StartRil(RilConsumer* aConsumer)
 bool
 SendRilMessage(RilMessage** aMessage)
 {
-    nsAutoPtr<RilMessage> msg(*aMessage);
-    *aMessage = nsnull;
-
     if (!sClient) {
         return false;
     }
+
+    RilMessage *msg = *aMessage;
+    *aMessage = nsnull;
 
     {
         MutexAutoLock lock(sClient->mMutex);

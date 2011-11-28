@@ -42,6 +42,7 @@
 #include "nsContentUtils.h"
 #include "nsIXPConnect.h"
 #include "nsIJSContextStack.h"
+#include "nsIObserverService.h"
 #include "mozilla/dom/workers/Workers.h"
 
 #include "nsThreadUtils.h"
@@ -65,6 +66,7 @@ Radio* gInstance = nsnull;
 JSBool
 ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
 {
+  NS_ASSERTION(NS_IsMainThread(), "postMessage posts to the main thread");
   jsval *argv = JS_ARGV(cx, vp);
 
   JS_ASSERT(argc == 1);
@@ -144,9 +146,31 @@ JSBool
 PostToRIL(JSContext *cx, uintN argc, jsval *vp)
 {
   NS_ASSERTION(!NS_IsMainThread(), "Expecting to be on the worker thread");
-  // TODO Convert arguments to a RilMessage and call SendRilMessage.
-  JSAutoByteString abs(cx, JSVAL_TO_STRING(vp[2]));
-  printf("Heading to RIL: %s\n", abs.ptr());
+
+  if (argc != 1) {
+    JS_ReportError(cx, "Expecting a single argument with the RIL message");
+    return false;
+  }
+
+  jsval v = JS_ARGV(cx, vp)[0];
+
+  nsAutoPtr<RilMessage> rm(new RilMessage());
+  if (JSVAL_IS_STRING(v)) {
+    JSString *str = JSVAL_TO_STRING(v);
+    JSAutoByteString abs(cx, str);
+    if (!abs.ptr()) {
+      return false;
+    }
+
+    rm->mSize = JS_GetStringLength(str);
+    memcpy(rm->mData, abs.ptr(), rm->mSize);
+  } else {
+    // TODO Deal with typed arrays.
+    JS_ReportError(cx, "TODO typed arrays not yet handled.");
+  }
+
+  RilMessage *tosend = rm.forget();
+  JS_ALWAYS_TRUE(SendRilMessage(&tosend));
   return true;
 }
 
@@ -188,6 +212,7 @@ private:
 } // anonymous namespace
 
 Radio::Radio()
+  : mShutdown(false)
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
   NS_ASSERTION(!gInstance, "There should only be one instance!");
@@ -206,7 +231,14 @@ Radio::Init()
 {
   NS_ASSERTION(NS_IsMainThread(), "We can only initialize on the main thread");
 
-  nsresult rv = RadioBase::Init();
+  nsCOMPtr<nsIObserverService> obs =
+    do_GetService(NS_OBSERVERSERVICE_CONTRACTID);
+  if (!obs) {
+    NS_WARNING("Failed to get observer service!");
+    return NS_ERROR_FAILURE;
+  }
+
+  nsresult rv = obs->AddObserver(this, PROFILE_BEFORE_CHANGE_TOPIC, false);
   NS_ENSURE_SUCCESS(rv, rv);
 
   // The telephony worker component is a hack that gives us a global object for
@@ -255,6 +287,11 @@ Radio::Init()
   rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
   NS_ENSURE_SUCCESS(rv, rv);
 
+  nsRefPtr<ConnectWorkerToRIL> connection = new ConnectWorkerToRIL();
+  if (!wctd->PostTask(connection)) {
+    return NS_ERROR_UNEXPECTED;
+  }
+
   // Now that we're set up, connect ourselves to the RIL thread.
   mozilla::RefPtr<RILReceiver> receiver = new RILReceiver(wctd);
   StartRil(receiver);
@@ -265,9 +302,12 @@ Radio::Init()
 void
 Radio::Shutdown()
 {
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+
   StopRil();
   mWorker = nsnull;
-  RadioBase::Shutdown();
+
+  mShutdown = true;
 }
 
 // static
@@ -290,4 +330,26 @@ Radio::FactoryCreate()
   return instance.forget();
 }
 
-NS_IMPL_ISUPPORTS_INHERITED0(Radio, RadioBase)
+NS_IMPL_ISUPPORTS1(Radio, nsIObserver)
+
+NS_IMETHODIMP
+Radio::Observe(nsISupports* aSubject, const char* aTopic,
+               const PRUnichar* aData)
+{
+  if (!strcmp(aTopic, PROFILE_BEFORE_CHANGE_TOPIC)) {
+    Shutdown();
+
+    nsCOMPtr<nsIObserverService> obs =
+      do_GetService(NS_OBSERVERSERVICE_CONTRACTID);
+    if (obs) {
+      if (NS_FAILED(obs->RemoveObserver(this, aTopic))) {
+        NS_WARNING("Failed to remove observer!");
+      }
+    }
+    else {
+      NS_WARNING("Failed to get observer service!");
+    }
+  }
+
+  return NS_OK;
+}

@@ -509,17 +509,11 @@
 #include "nsWrapperCacheInlines.h"
 #include "dombindings.h"
 
-//#include "Telephony.h"
-//#include "TelephonySession.h"
-//#include "TelephonySessionGroup.h"
-//#include "IncomingCallEvent.h"
 #include "nsIDOMBatteryManager.h"
 #include "BatteryManager.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
-
-//using mozilla::dom::telephony::TelephonySessionGroup;
 
 static NS_DEFINE_CID(kDOMSOF_CID, NS_DOM_SCRIPT_OBJECT_FACTORY_CID);
 
@@ -1540,17 +1534,6 @@ static nsDOMClassInfoData sClassInfoData[] = {
                            DOM_DEFAULT_SCRIPTABLE_FLAGS)
   NS_DEFINE_CLASSINFO_DATA(CustomEvent, nsDOMGenericSH,
                            DOM_DEFAULT_SCRIPTABLE_FLAGS)
-
-#if 0
-  NS_DEFINE_CLASSINFO_DATA(Telephony, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-  NS_DEFINE_CLASSINFO_DATA(TelephonySession, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-  NS_DEFINE_CLASSINFO_DATA(TelephonySessionGroup, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-  NS_DEFINE_CLASSINFO_DATA(IncomingCallEvent, nsDOMGenericSH,
-                           DOM_DEFAULT_SCRIPTABLE_FLAGS)
-#endif
 };
 
 // Objects that should be constructable through |new Name();|
@@ -1590,10 +1573,6 @@ static const nsConstructorFuncMapData kConstructorFuncMap[] =
 {
   NS_DEFINE_CONSTRUCTOR_FUNC_DATA(File, nsDOMFileFile::NewFile)
   NS_DEFINE_CONSTRUCTOR_FUNC_DATA(MozBlobBuilder, NS_NewBlobBuilder)
-#if 0
-  NS_DEFINE_CONSTRUCTOR_FUNC_DATA(TelephonySessionGroup,
-                                  TelephonySessionGroup::Construct)
-#endif
 };
 
 nsIXPConnect *nsDOMClassInfo::sXPConnect = nsnull;
@@ -2308,7 +2287,6 @@ nsDOMClassInfo::Init()
     DOM_CLASSINFO_MAP_CONDITIONAL_ENTRY(nsIDOMNavigatorDesktopNotification,
                                         Navigator::HasDesktopNotificationSupport())
     DOM_CLASSINFO_MAP_ENTRY(nsIDOMClientInformation)
-    //DOM_CLASSINFO_MAP_ENTRY(nsIDOMNavigatorTelephony)
     DOM_CLASSINFO_MAP_CONDITIONAL_ENTRY(nsIDOMNavigatorBattery,
                                         battery::BatteryManager::HasSupport())
   DOM_CLASSINFO_MAP_END
@@ -4167,27 +4145,6 @@ nsDOMClassInfo::Init()
     DOM_CLASSINFO_MAP_ENTRY(nsIDOMCustomEvent)
     DOM_CLASSINFO_EVENT_MAP_ENTRIES
   DOM_CLASSINFO_MAP_END
-
-#if 0
-  DOM_CLASSINFO_MAP_BEGIN(Telephony, nsIDOMTelephony)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMTelephony)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMEventTarget)
-  DOM_CLASSINFO_MAP_END
-
-  DOM_CLASSINFO_MAP_BEGIN(TelephonySession, nsIDOMTelephonySession)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMTelephonySession)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMEventTarget)
-  DOM_CLASSINFO_MAP_END
-
-  DOM_CLASSINFO_MAP_BEGIN(TelephonySessionGroup, nsIDOMTelephonySessionGroup)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMTelephonySessionGroup)
-  DOM_CLASSINFO_MAP_END
-
-  DOM_CLASSINFO_MAP_BEGIN(IncomingCallEvent, nsIDOMIncomingCallEvent)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMIncomingCallEvent)
-    DOM_CLASSINFO_MAP_ENTRY(nsIDOMEvent)
-  DOM_CLASSINFO_MAP_END
-#endif
 
 #ifdef NS_DEBUG
   {
