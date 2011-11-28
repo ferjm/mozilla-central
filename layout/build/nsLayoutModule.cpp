@@ -126,7 +126,6 @@
 #include "nsJSON.h"
 #include "mozilla/dom/indexedDB/IndexedDatabaseManager.h"
 #include "Radio.h"
-#include "RadioBase.h"
 
 using mozilla::dom::indexedDB::IndexedDatabaseManager;
 using mozilla::dom::telephony::Radio;

@@ -99,7 +99,6 @@
 #include "mozilla/TimeStamp.h"
 #include "nsIDOMTouchEvent.h"
 #include "nsIInlineEventHandlers.h"
-//#include "nsIDOMNavigatorTelephony.h"
 
 // JS includes
 #include "jsapi.h"

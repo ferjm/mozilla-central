@@ -40,8 +40,23 @@
 #ifndef mozilla_dom_telephony_radio_h__
 #define mozilla_dom_telephony_radio_h__
 
-#include "RadioBase.h"
+#include "jsapi.h"
+#include "nsComponentManagerUtils.h"
+#include "nsCOMPtr.h"
+#include "nsDebug.h"
+#include "nsServiceManagerUtils.h"
+
+#include "nsIObserver.h"
 #include "mozilla/ipc/Ril.h"
+
+#define TELEPHONYRADIO_CONTRACTID "@mozilla.org/telephony/radio;1"
+
+#define BEGIN_TELEPHONY_NAMESPACE \
+  namespace mozilla { namespace dom { namespace telephony {
+#define END_TELEPHONY_NAMESPACE \
+  } /* namespace telephony */ } /* namespace dom */ } /* namespace mozilla */
+#define USING_TELEPHONY_NAMESPACE \
+  using namespace mozilla::dom::telephony;
 
 // {a5c3a6de-84c4-4b15-8611-8aeb8d97f8ba}
 #define TELEPHONYRADIO_CID \
@@ -51,13 +66,14 @@ class nsIXPConnectJSObjectHolder;
 
 BEGIN_TELEPHONY_NAMESPACE
 
-class Radio : public RadioBase
+class Radio : public nsIObserver
 {
 public:
-  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIOBSERVER
 
-  virtual nsresult Init();
-  virtual void Shutdown();
+  nsresult Init();
+  void Shutdown();
 
   static already_AddRefed<Radio>
   FactoryCreate();
@@ -67,6 +83,7 @@ protected:
   ~Radio();
 
   nsCOMPtr<nsIXPConnectJSObjectHolder> mWorker;
+  bool mShutdown;
 };
 
 END_TELEPHONY_NAMESPACE
