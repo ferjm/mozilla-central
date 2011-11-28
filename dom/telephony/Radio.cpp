@@ -156,13 +156,13 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
   nsAutoPtr<RilMessage> rm(new RilMessage());
   if (JSVAL_IS_STRING(v)) {
     JSString *str = JSVAL_TO_STRING(v);
-    JSFlatString *flatstr = JS_FlattenString(cx, str);
-    if (!flatstr) {
+    JSAutoByteString abs(cx, str);
+    if (!abs.ptr()) {
       return false;
     }
 
     rm->mSize = JS_GetStringLength(str);
-    memcpy(rm->mData, JS_GetFlatStringChars(flatstr), rm->mSize);
+    memcpy(rm->mData, abs.ptr(), rm->mSize);
   } else {
     // TODO Deal with typed arrays.
     JS_ReportError(cx, "TODO typed arrays not yet handled.");
