@@ -278,6 +278,11 @@ Radio::Init()
   rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
   NS_ENSURE_SUCCESS(rv, rv);
 
+  nsRefPtr<ConnectWorkerToRIL> connection = new ConnectWorkerToRIL();
+  if (!wctd->PostTask(connection)) {
+    return NS_ERROR_UNEXPECTED;
+  }
+
   // Now that we're set up, connect ourselves to the RIL thread.
   mozilla::RefPtr<RILReceiver> receiver = new RILReceiver(wctd);
   StartRil(receiver);
