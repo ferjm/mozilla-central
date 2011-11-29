@@ -149,7 +149,7 @@ using mozilla::dom::telephony::Radio;
 #include "nsNullPrincipal.h"
 #include "nsNetCID.h"
 #include "nsINodeInfo.h"
-#if defined(ANDROID) || defined(MOZ_PLATFORM_MAEMO)
+#if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_PLATFORM_MAEMO)
 #include "nsHapticFeedback.h"
 #endif
 
