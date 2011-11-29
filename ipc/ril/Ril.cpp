@@ -42,6 +42,13 @@
 
 #include <queue>
 
+#if defined(MOZ_WIDGET_GONK)
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <sys/select.h>
+#include <sys/types.h>
+#endif
+
 #include "base/eintr_wrapper.h"
 #include "base/message_loop.h"
 #include "mozilla/FileUtils.h"
@@ -52,6 +59,13 @@
 #include "nsXULAppAPI.h"
 #include "Ril.h"
 
+#if defined(MOZ_WIDGET_GONK)
+#include <android/log.h>
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk", args)
+#else
+#define LOG(args...)  printf(args);
+#endif
+
 using namespace base;
 using namespace std;
 
@@ -60,7 +74,7 @@ namespace ipc {
 
 struct RilClient : public RefCounted<RilClient>,
                    public MessageLoopForIO::Watcher
-                   
+
 {
     typedef queue<RilMessage*> RilMessageQueue;
 
@@ -119,8 +133,20 @@ RilClient::OpenSocket()
      * Currently using a network socket to test basic functionality
      * before we see how this works on the phone.
      */
+#if defined(MOZ_WIDGET_GONK)
+    struct sockaddr_un addr;
+    socklen_t alen;
+    size_t namelen;
+    int err;
+    memset(&addr, 0, sizeof(addr));
+    strcpy(addr.sun_path, "/dev/socket/rilb2g");
+    addr.sun_family = AF_LOCAL;
+    mSocket.mFd = socket(AF_LOCAL, SOCK_STREAM, 0);
+    alen = strlen("/dev/socket/rilb2g") + offsetof(struct sockaddr_un, sun_path) + 1;
+#else
     struct hostent *hp;
     struct sockaddr_in addr;
+    socklen_t alen;
     int s;
 
     hp = gethostbyname("localhost");
@@ -130,16 +156,26 @@ RilClient::OpenSocket()
     addr.sin_family = hp->h_addrtype;
     addr.sin_port = htons(6200);
     memcpy(&addr.sin_addr, hp->h_addr, hp->h_length);
-
     mSocket.mFd = socket(hp->h_addrtype, SOCK_STREAM, 0);
-    if(s < 0) return -1;
+    alen = sizeof(addr);
+#endif
 
-    if(connect(mSocket.mFd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        printf("Cannot open network socket for RIL!\n");
+    if(mSocket.mFd < 0)
+    {
+        LOG("Cannot create socket for RIL!\n");
+        return -1;
+    }
+
+
+
+    if(connect(mSocket.mFd, (struct sockaddr *) &addr, alen) < 0) {
+        LOG("Cannot open socket for RIL!\n");
         close(mSocket.mFd);
         return false;
     }
-    printf("Network socket open for RIL\n");
+    LOG("Socket open for RIL\n");
+
+
 
     // Set close-on-exec bit.
     int flags = fcntl(mSocket.mFd, F_GETFD);
@@ -193,10 +229,10 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
         }
 
         // Keep reading data until either
-        // 
+        //
         //   - mIncoming is completely read
         //     If so, sConsumer->MessageReceived(mIncoming.forget())
-        // 
+        //
         //   - mIncoming isn't completely read, but there's no more
         //     data available on the socket
         //     If so, break;
@@ -224,7 +260,7 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
                 written = write (fd, toWrite + writeOffset,
                                  msg->mSize - writeOffset);
             } while (written < 0 && errno == EINTR);
-            
+
             if (written >= 0) {
                 writeOffset += written;
             }
@@ -248,7 +284,7 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         }
         mOutgoingQ.pop();
     }
-     
+
 }
 
 
