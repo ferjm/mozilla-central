@@ -44,6 +44,7 @@
 #include "nsIJSContextStack.h"
 #include "nsIObserverService.h"
 #include "mozilla/dom/workers/Workers.h"
+#include "jstypedarray.h"
 
 #include "nsThreadUtils.h"
 
@@ -155,19 +156,47 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
   jsval v = JS_ARGV(cx, vp)[0];
 
   nsAutoPtr<RilMessage> rm(new RilMessage());
+  JSAutoByteString abs;
+  void *data;
+  size_t size;
   if (JSVAL_IS_STRING(v)) {
     JSString *str = JSVAL_TO_STRING(v);
-    JSAutoByteString abs(cx, str);
-    if (!abs.ptr()) {
+    if (!abs.encode(cx, str)) {
       return false;
     }
 
-    rm->mSize = JS_GetStringLength(str);
-    memcpy(rm->mData, abs.ptr(), rm->mSize);
+    size = JS_GetStringLength(str);
+    data = abs.ptr();
+  } else if (!JSVAL_IS_PRIMITIVE(v)) {
+    JSObject *obj = JSVAL_TO_OBJECT(v);
+    if (!js_IsTypedArray(obj)) {
+      JS_ReportError(cx, "Object passed in wasn't a typed array");
+      return false;
+    }
+
+    JSUint32 type = JS_GetTypedArrayType(obj);
+    if (type != js::TypedArray::TYPE_INT8 &&
+        type != js::TypedArray::TYPE_UINT8 &&
+        type != js::TypedArray::TYPE_UINT8_CLAMPED) {
+      JS_ReportError(cx, "Typed array data is not octets");
+      return false;
+    }
+
+    size = JS_GetTypedArrayByteLength(obj);
+    data = JS_GetTypedArrayData(obj);
   } else {
-    // TODO Deal with typed arrays.
-    JS_ReportError(cx, "TODO typed arrays not yet handled.");
+    JS_ReportError(cx,
+                   "Incorrect argument. Expecting a string or a typed array");
+    return false;
   }
+
+  if (size > RilMessage::DATA_SIZE) {
+    JS_ReportError(cx, "Passed-in data is too large");
+    return false;
+  }
+
+  rm->mSize = size;
+  memcpy(rm->mData, data, size);
 
   RilMessage *tosend = rm.forget();
   JS_ALWAYS_TRUE(SendRilMessage(&tosend));

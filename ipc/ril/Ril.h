@@ -53,7 +53,8 @@ namespace ipc {
 
 struct RilMessage
 {
-    char mData[1024];
+    static const size_t DATA_SIZE = 1024;
+    char mData[DATA_SIZE];
 
     // Number of octets in mData.
     size_t mSize;
