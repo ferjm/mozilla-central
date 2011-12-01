@@ -1177,7 +1177,9 @@ let Phone = {
 
 if (!this.debug) {
   // Debugging stub that goes nowhere.
-  this.debug = function debug() {};
+  this.debug = function debug(message) {
+    dump(message + "\n");
+  };
 }
 
 // Initialize buffers. This is a separate function so that unit tests can

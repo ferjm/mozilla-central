@@ -59,7 +59,7 @@ function onerror(evt) {
 }
 
 function onmessage(evt) {
-    dump("Received from worker: " + evt.data + "\n");
+    dump("Received from worker: " + JSON.stringify(evt.data) + "\n");
 }
 
 function nsTelephonyWorker() {
