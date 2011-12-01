@@ -47,7 +47,11 @@ EXTRA_COMPONENTS = \
 		nsTelephonyWorker.js \
 		$(NULL)
 
-EXTRA_JS_MODULES = nsRILDecoder.js
+EXTRA_JS_MODULES = \
+		nsRILDecoder.js \
+		ril_vars.js \
+		ril_worker.js \
+		$(NULL)
 
 XPIDL_MODULE	= dom_telephony
 XPIDLSRCS	= nsITelephonyWorker.idl

@@ -45,15 +45,15 @@ const nsITelephonyWorker                = Components.interfaces.nsITelephonyWork
 
 function nsTelephonyWorker()
 {
-    this.worker = new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
+  this.worker = new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
 }
 
 nsTelephonyWorker.prototype.classID = TELEPHONYWORKER_CID;
 
 nsTelephonyWorker.prototype.classInfo = XPCOMUtils.generateCI({classID: TELEPHONYWORKER_CID,
-                                                       contractID: TELEPHONYWORKER_CONTRACTID,
-                                                       classDescription: "TelephonyWorker",
-                                                       interfaces: [nsITelephonyWorker]});
+															   contractID: TELEPHONYWORKER_CONTRACTID,
+															   classDescription: "TelephonyWorker",
+															   interfaces: [nsITelephonyWorker]});
 
 nsTelephonyWorker.prototype.QueryInterface = XPCOMUtils.generateQI([nsITelephonyWorker]);
 
@@ -61,6 +61,6 @@ var NSGetFactory = XPCOMUtils.generateNSGetFactory([nsTelephonyWorker]);
 
 /* static functions */
 if (DEBUG)
-    debug = function (s) { dump("-*- TelephonyWorker component: " + s + "\n"); }
+  debug = function (s) { dump("-*- TelephonyWorker component: " + s + "\n"); }
 else
-    debug = function (s) {}
+  debug = function (s) {}

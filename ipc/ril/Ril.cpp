@@ -216,11 +216,11 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
             int ret = read(fd, mIncoming->mData, 1024);
             if(ret <= 0)
             {
-                printf("CAnnot read from network, error %d\n", ret);
+                LOG("Cannot read from network, error %d\n", ret);
                 return;
             }
             mIncoming->mSize = ret;
-            printf("RIL Read from network %d\n", (int)mIncoming->mSize);
+            LOG("RIL Read from network %d\n", (int)mIncoming->mSize);
             sConsumer->MessageReceived(mIncoming.forget());
             if(ret < 1024)
             {

@@ -48,6 +48,13 @@
 
 #include "nsThreadUtils.h"
 
+#if defined(MOZ_WIDGET_GONK)
+#include <android/log.h>
+#define LOG(args...)  __android_log_print(ANDROID_LOG_INFO, "Gonk", args)
+#else
+#define LOG(args...)  printf(args);
+#endif
+
 USING_WORKERS_NAMESPACE
 using namespace mozilla::ipc;
 
@@ -82,13 +89,13 @@ ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
   // this in C++, it'll probably be something like "an object with a given
   // property specifying the type of event and another property with data about
   // the event.
-  JSAutoByteString abs(cx, JSVAL_TO_STRING(v));
-  printf("Received from worker: %s\n", abs.ptr());
+  // JSAutoByteString abs(cx, JSVAL_TO_STRING(v));
+  LOG("Received from worker\n");
   return true;
 }
 
 // Called when the worker throws an exception. This should never happen.
-// For now printf the exception. It might be worth throwing something up on the
+// For now LOG the exception. It might be worth throwing something up on the
 // developer console, though.
 JSBool
 HandleError(JSContext *cx, uintN argc, jsval *vp)
@@ -116,7 +123,7 @@ HandleError(JSContext *cx, uintN argc, jsval *vp)
   // message must be a string.
   JSAutoByteString filenameabs(cx, JSVAL_TO_STRING(filenameval));
   JSAutoByteString messageabs(cx, JSVAL_TO_STRING(messageval));
-  printf("Got an error: %s:%d: %s\n",
+  LOG("Got an error: %s:%d: %s\n",
          filenameabs.ptr(), JSVAL_TO_INT(linenoval), messageabs.ptr());
   return true;
 }
