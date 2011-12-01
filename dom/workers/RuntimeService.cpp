@@ -465,26 +465,22 @@ ResumeWorkersForWindow(JSContext* aCx, nsPIDOMWindow* aWindow)
   }
 }
 
-WorkerCrossThreadDispatcher*
-GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker)
-{
-  if (!JSVAL_IS_OBJECT(aWorker))
-    return NULL;
-  WorkerPrivate* w = worker::GetInstancePrivate(aCx, JSVAL_TO_OBJECT(aWorker));
-  if (!w)
-    return NULL;
-  return w->GetCrossThreadDispatcher();
-}
-
 namespace {
 
 class WorkerTaskRunnable : public WorkerRunnable
 {
 public:
   WorkerTaskRunnable(WorkerPrivate* aPrivate, WorkerTask* aTask)
-    // XXX Is ModifyBusyCount correct?
-    : WorkerRunnable(aPrivate, WorkerThread, ModifyBusyCount),
+    : WorkerRunnable(aPrivate, WorkerThread, UnchangedBusyCount),
       mTask(aTask)
+  { }
+
+  virtual bool PreDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate) {
+    return true;
+  }
+
+  virtual void PostDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate,
+                            bool aDispatchResult)
   { }
 
   virtual bool WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate);
@@ -493,50 +489,10 @@ private:
   nsRefPtr<WorkerTask> mTask;
 };
 
-class RILMessageEventRunnable : public WorkerRunnable
-{
-public:
-  RILMessageEventRunnable(WorkerPrivate* aPrivate, const char *aData, size_t aSize)
-    : WorkerRunnable(aPrivate, WorkerThread, UnchangedBusyCount),
-      mData(aData),
-      mSize(aSize)
-  { }
-
-  bool
-  PreDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
-  {
-    return true;
-  }
-
-  bool
-  WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
-  {
-    JSObject* eventobj = events::CreateRILMessageEvent(aCx, mData, mSize);
-    if (!eventobj) {
-      return false;
-    }
-
-    bool preventDefault;
-    JSObject* target = JS_GetGlobalObject(aCx);
-    return events::DispatchEventToTarget(aCx, target, eventobj, &preventDefault);
-  }
-
-  void
-    PostDispatch(JSContext* aCx, WorkerPrivate* aWorkerPrivate,
-                 bool aDispatchResult)
-    {
-    }
-
-private:
-  const char *mData;
-  size_t mSize;
-};
-
 bool
 WorkerTaskRunnable::WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate)
 {
-  mTask->RunTask(aCx);
-  return true;
+  return mTask->RunTask(aCx);
 }
 
 }
@@ -545,23 +501,11 @@ bool
 WorkerCrossThreadDispatcher::PostTask(WorkerTask* aTask)
 {
   mozilla::MutexAutoLock lock(mMutex);
-  if (!mPrivate)
+  if (!mPrivate) {
     return false;
+  }
 
   nsRefPtr<WorkerTaskRunnable> runnable = new WorkerTaskRunnable(mPrivate, aTask);
-  runnable->Dispatch(nsnull);
-  return true;
-}
-
-bool
-WorkerCrossThreadDispatcher::DispatchRILEvent(const char* aData, size_t aSize)
-{
-  mozilla::MutexAutoLock lock(mMutex);
-  if (!mPrivate)
-    return false;
-
-  nsRefPtr<RILMessageEventRunnable> runnable =
-    new RILMessageEventRunnable(mPrivate, aData, aSize);
   runnable->Dispatch(nsnull);
   return true;
 }

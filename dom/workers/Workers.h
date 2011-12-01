@@ -89,7 +89,7 @@ public:
 
     virtual ~WorkerTask() { }
 
-    virtual void RunTask(JSContext* aCx) = 0;
+    virtual bool RunTask(JSContext* aCx) = 0;
 };
 
 class WorkerCrossThreadDispatcher {
@@ -109,12 +109,6 @@ public:
    * thread.
    */
   bool PostTask(WorkerTask* aTask);
-
-  /**
-   * XXX Need a more generic mechanism for dispatching custom events to worker
-   * threads from non-worker threads.
-   */
-  bool DispatchRILEvent(const char* aData, size_t aSize);
 
 protected:
   friend class WorkerPrivate;

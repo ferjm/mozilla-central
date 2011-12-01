@@ -43,9 +43,30 @@ const TELEPHONYWORKER_CONTRACTID        = "@mozilla.org/telephony/worker;1";
 const TELEPHONYWORKER_CID               = Components.ID("{2d831c8d-6017-435b-a80c-e5d422810cea}");
 const nsITelephonyWorker                = Components.interfaces.nsITelephonyWorker;
 
-function nsTelephonyWorker()
-{
-  this.worker = new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
+function onerror(evt) {
+    // It is very important to call preventDefault on the event here.
+    // If an exception is thrown on the worker, it bubbles out to the component
+    // that created it. If that component doesn't have an onerror handler, the
+    // worker will try to call the error reporter on the context it was created
+    // on. However, That doesn't work for component contexts and can result in
+    // crashes. This onerror handler has to make sure that it calls preventDefault
+    // on the incoming event.
+
+    evt.preventDefault();
+
+    dump("Got an error: " + evt.filename + ":" +
+         evt.lineno + ": " + evt.message + "\n");
+}
+
+function onmessage(evt) {
+    dump("Received from worker: " + evt.data + "\n");
+}
+
+function nsTelephonyWorker() {
+    var worker = this.worker =
+        new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
+    worker.onerror = onerror;
+    worker.onmessage = onmessage;
 }
 
 nsTelephonyWorker.prototype.classID = TELEPHONYWORKER_CID;

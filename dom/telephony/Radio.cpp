@@ -70,84 +70,9 @@ namespace {
 // Doesn't carry a reference, we're owned by services.
 Radio* gInstance = nsnull;
 
-// Called when the worker wants to talk to the DOM.
-JSBool
-ReceiveMessage(JSContext *cx, uintN argc, jsval *vp)
-{
-  NS_ASSERTION(NS_IsMainThread(), "postMessage posts to the main thread");
-  jsval *argv = JS_ARGV(cx, vp);
-
-  JS_ASSERT(argc == 1);
-  JSObject *eventobj = JSVAL_TO_OBJECT(argv[0]);
-
-  jsval v;
-  if (!JS_GetProperty(cx, eventobj, "data", &v)) {
-    return false;
-  }
-
-  // XXX Need to figure out what the protocol looks like here. Since we're doing
-  // this in C++, it'll probably be something like "an object with a given
-  // property specifying the type of event and another property with data about
-  // the event.
-  // JSAutoByteString abs(cx, JSVAL_TO_STRING(v));
-  LOG("Received from worker\n");
-  return true;
-}
-
-// Called when the worker throws an exception. This should never happen.
-// For now LOG the exception. It might be worth throwing something up on the
-// developer console, though.
-JSBool
-HandleError(JSContext *cx, uintN argc, jsval *vp)
-{
-  jsval *argv = JS_ARGV(cx, vp);
-
-  JS_ASSERT(argc == 1);
-  JSObject *eventobj = JSVAL_TO_OBJECT(argv[0]);
-
-  jsval callee_argv;
-  if (!JS_CallFunctionName(cx, eventobj, "preventDefault", 0, &callee_argv,
-                           &callee_argv)) {
-    return false;
-  }
-
-  jsval filenameval;
-  jsval messageval;
-  jsval linenoval;
-  if (!JS_GetProperty(cx, eventobj, "filename", &filenameval) ||
-      !JS_GetProperty(cx, eventobj, "lineno", &linenoval) ||
-      !JS_GetProperty(cx, eventobj, "message", &messageval)) {
-    return false;
-  }
-
-  // message must be a string.
-  JSAutoByteString filenameabs(cx, JSVAL_TO_STRING(filenameval));
-  JSAutoByteString messageabs(cx, JSVAL_TO_STRING(messageval));
-  LOG("Got an error: %s:%d: %s\n",
-         filenameabs.ptr(), JSVAL_TO_INT(linenoval), messageabs.ptr());
-  return true;
-}
-
-nsresult
-SetHandler(JSContext *cx, JSObject *workerobj, JSNative native, const char *name)
-{
-  JSFunction *fun = JS_NewFunction(cx, native, 1, 0,
-                                   JS_GetGlobalForObject(cx, workerobj), name);
-  if (!fun) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
-
-  jsval v = OBJECT_TO_JSVAL(JS_GetFunctionObject(fun));
-  if (!JS_SetProperty(cx, workerobj, name, &v)) {
-    return NS_ERROR_FAILURE;
-  }
-
-  return NS_OK;
-}
-
 class ConnectWorkerToRIL : public WorkerTask {
 public:
-  virtual void RunTask(JSContext *aCx);
+  virtual bool RunTask(JSContext *aCx);
 };
 
 JSBool
@@ -210,7 +135,7 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
   return true;
 }
 
-void
+bool
 ConnectWorkerToRIL::RunTask(JSContext *aCx)
 {
   // Set up the postRILMessage on the function for worker -> RIL thread
@@ -219,31 +144,53 @@ ConnectWorkerToRIL::RunTask(JSContext *aCx)
   NS_ASSERTION(!JS_IsRunning(aCx), "Are we being called somehow?");
   JSObject *workerGlobal = JS_GetGlobalObject(aCx);
 
-  JSAutoRequest ar(aCx);
-  JSAutoEnterCompartment ac;
-  if (!ac.enter(aCx, workerGlobal)) {
-    return;
-  }
-
-  if (!JS_DefineFunction(aCx, workerGlobal, "postRILMessage", PostToRIL, 1, 0)) {
-    return;
-  }
+  return JS_DefineFunction(aCx, workerGlobal, "postRILMessage", PostToRIL, 1, 0);
 }
 
 class RILReceiver : public RilConsumer
 {
+  class DispatchRILEvent : public WorkerTask {
+  public:
+    DispatchRILEvent(RilMessage *aMessage)
+      : mMessage(aMessage)
+    { }
+
+    virtual bool RunTask(JSContext *aCx);
+
+  private:
+    nsAutoPtr<RilMessage> mMessage;
+  };
+
 public:
   RILReceiver(WorkerCrossThreadDispatcher *aDispatcher)
     : mDispatcher(aDispatcher)
   { }
 
   virtual void MessageReceived(RilMessage *aMessage) {
-    mDispatcher->DispatchRILEvent(aMessage->mData, aMessage->mSize);
+    nsRefPtr<DispatchRILEvent> dre(new DispatchRILEvent(aMessage));
+    mDispatcher->PostTask(dre);
   }
 
 private:
   nsRefPtr<WorkerCrossThreadDispatcher> mDispatcher;
 };
+
+bool
+RILReceiver::DispatchRILEvent::RunTask(JSContext *aCx)
+{
+  JSObject *obj = JS_GetGlobalObject(aCx);
+
+  JSObject *array =
+    js_CreateTypedArray(aCx, js::TypedArray::TYPE_UINT8, mMessage->mSize);
+  if (!array) {
+    return false;
+  }
+
+  memcpy(JS_GetTypedArrayData(array), mMessage->mData, mMessage->mSize);
+  jsval argv[] = { OBJECT_TO_JSVAL(array) };
+  return JS_CallFunctionName(aCx, obj, "onRILMessage", NS_ARRAY_LENGTH(argv),
+                             argv, argv);
+}
 
 } // anonymous namespace
 
@@ -287,12 +234,13 @@ Radio::Init()
   jsval workerval;
   rv = worker->GetWorker(&workerval);
   NS_ENSURE_SUCCESS(rv, rv);
-
   NS_ASSERTION(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
+
   JSContext *cx;
   rv = nsContentUtils::ThreadJSContextStack()->GetSafeJSContext(&cx);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (!cx) {
+  nsCxPusher pusher;
+  if (!cx || !pusher.Push(cx, false)) {
     return NS_ERROR_FAILURE;
   }
 
@@ -311,17 +259,6 @@ Radio::Init()
   if (!wctd) {
     return NS_ERROR_FAILURE;
   }
-
-  // If an exception is thrown on the worker, it bubbles out to the component
-  // that created it. If that component doesn't have an onerror handler, the
-  // worker will try to call the error reporter on the context it was created
-  // on. However, That doesn't work for component contexts and can result in
-  // crashes. This onerror handler has to make sure that it calls preventDefault
-  // on the incoming event.
-  rv = SetHandler(cx, workerobj, HandleError, "onerror");
-  NS_ENSURE_SUCCESS(rv, rv);
-  rv = SetHandler(cx, workerobj, ReceiveMessage, "onmessage");
-  NS_ENSURE_SUCCESS(rv, rv);
 
   nsRefPtr<ConnectWorkerToRIL> connection = new ConnectWorkerToRIL();
   if (!wctd->PostTask(connection)) {
