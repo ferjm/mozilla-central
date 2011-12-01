@@ -272,12 +272,13 @@ Radio::Init()
   jsval workerval;
   rv = worker->GetWorker(&workerval);
   NS_ENSURE_SUCCESS(rv, rv);
-
   NS_ASSERTION(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
+
   JSContext *cx;
   rv = nsContentUtils::ThreadJSContextStack()->GetSafeJSContext(&cx);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (!cx) {
+  nsCxPusher pusher;
+  if (!cx || !pusher.Push(cx, false)) {
     return NS_ERROR_FAILURE;
   }
 
