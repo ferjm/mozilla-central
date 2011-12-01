@@ -64,7 +64,7 @@ function onmessage(evt) {
 
 function nsTelephonyWorker() {
     var worker = this.worker =
-        new ChromeWorker("resource://gre/modules/nsRILDecoder.js");
+        new ChromeWorker("resource://gre/modules/ril_worker.js");
     worker.onerror = onerror;
     worker.onmessage = onmessage;
 }

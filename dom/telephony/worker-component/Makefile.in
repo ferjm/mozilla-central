@@ -48,7 +48,6 @@ EXTRA_COMPONENTS = \
 		$(NULL)
 
 EXTRA_JS_MODULES = \
-		nsRILDecoder.js \
 		ril_vars.js \
 		ril_worker.js \
 		$(NULL)
