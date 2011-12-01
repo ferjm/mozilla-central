@@ -8,10 +8,8 @@ function terminate(s) {
     return s[s.length - 1] == '\n' ? s : s + '\n';
 }
 
-function DoRIL(evt) {
-    var asChars = [String.fromCharCode(evt.data[i]) for (i in evt.data)];
+function onRILMessage(data) {
+    var asChars = [String.fromCharCode(data[i]) for (i in data)];
     postMessage(asChars.toString());
     postRILMessage(terminate(asChars.join('').toUpperCase()));
 }
-
-addEventListener("RILMessageEvent", DoRIL, false, false);

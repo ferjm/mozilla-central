@@ -1054,155 +1054,6 @@ JSFunctionSpec ProgressEvent::sFunctions[] = {
   JS_FS_END
 };
 
-class RILMessageEvent : public Event
-{
-  static JSClass sClass;
-  static JSPropertySpec sProperties[];
-
-public:
-  static JSClass*
-  Class()
-  {
-    return &sClass;
-  }
-
-  static JSObject*
-  InitClass(JSContext* aCx, JSObject* aObj, JSObject* aParentProto)
-  {
-    return JS_InitClass(aCx, aObj, aParentProto, &sClass, Construct, 0,
-                        sProperties, NULL, NULL, NULL);
-  }
-
-  static JSObject*
-  Create(JSContext* aCx, JSObject* aParent, JSString* aType, const char* aData,
-         size_t aSize)
-  {
-    JSString* type = JS_InternJSString(aCx, aType);
-    if (!type) {
-      return NULL;
-    }
-
-    JSObject* obj = JS_NewObject(aCx, &sClass, NULL, aParent);
-    if (!obj) {
-      return NULL;
-    }
-
-    JSObject *data = js_CreateTypedArray(aCx, js::TypedArray::TYPE_UINT8, aSize);
-    if (!data) {
-      return NULL;
-    }
-
-    memcpy(JS_GetTypedArrayData(data), aData, aSize);
-
-    RILMessageEvent* priv = new RILMessageEvent();
-    if (!SetJSPrivateSafeish(aCx, obj, priv) ||
-        !InitRILMessageEvent(aCx, obj, priv, type, false, false,
-                             OBJECT_TO_JSVAL(data), true)) {
-      SetJSPrivateSafeish(aCx, obj, NULL);
-      delete priv;
-      return NULL;
-    }
-    return obj;
-  }
-
-protected:
-  RILMessageEvent()
-  {
-    MOZ_COUNT_CTOR(mozilla::dom::workers::RILMessageEvent);
-  }
-
-  ~RILMessageEvent()
-  {
-    MOZ_COUNT_DTOR(mozilla::dom::workers::RILMessageEvent);
-  }
-
-  enum SLOT {
-    SLOT_data = Event::SLOT_COUNT,
-
-    SLOT_COUNT,
-    SLOT_FIRST = SLOT_data
-  };
-
-private:
-  static RILMessageEvent*
-  GetInstancePrivate(JSContext* aCx, JSObject* aObj, const char* aFunctionName)
-  {
-    JSClass* classPtr = NULL;
-
-    if (aObj) {
-      classPtr = JS_GET_CLASS(aCx, aObj);
-      if (classPtr == &sClass) {
-        return GetJSPrivateSafeish<RILMessageEvent>(aCx, aObj);
-      }
-    }
-
-    JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL,
-                         JSMSG_INCOMPATIBLE_PROTO, sClass.name, aFunctionName,
-                         classPtr ? classPtr->name : "object");
-    return NULL;
-  }
-
-  static JSBool
-  InitRILMessageEvent(JSContext* aCx, JSObject* aObj, Event* aEvent,
-                      JSString* aType, JSBool aBubbles, JSBool aCancelable,
-                      jsval aMessage, bool aIsTrusted)
-  {
-    if (!Event::InitEventCommon(aCx, aObj, aEvent, aType, aBubbles,
-                                aCancelable, aIsTrusted) ||
-        !JS_SetReservedSlot(aCx, aObj, SLOT_data, aMessage)) {
-      return false;
-    }
-    return true;
-  }
-
-  static JSBool
-  Construct(JSContext* aCx, uintN aArgc, jsval* aVp)
-  {
-    JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL, JSMSG_WRONG_CONSTRUCTOR,
-                         sClass.name);
-    return false;
-  }
-
-  static void
-  Finalize(JSContext* aCx, JSObject* aObj)
-  {
-    JS_ASSERT(JS_GET_CLASS(aCx, aObj) == &sClass);
-    delete GetJSPrivateSafeish<RILMessageEvent>(aCx, aObj);
-  }
-
-  static JSBool
-  GetProperty(JSContext* aCx, JSObject* aObj, jsid aIdval, jsval* aVp)
-  {
-    JS_ASSERT(JSID_IS_INT(aIdval));
-
-    int32 slot = JSID_TO_INT(aIdval);
-
-    JS_ASSERT(slot == SLOT_data);
-
-    const char*& name = sProperties[slot - SLOT_FIRST].name;
-    RILMessageEvent* event = GetInstancePrivate(aCx, aObj, name);
-    if (!event) {
-      return false;
-    }
-
-    return JS_GetReservedSlot(aCx, aObj, slot, aVp);
-  }
-};
-
-JSClass RILMessageEvent::sClass = {
-  "RILMessageEvent",
-  JSCLASS_HAS_PRIVATE | JSCLASS_HAS_RESERVED_SLOTS(SLOT_COUNT),
-  JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
-  JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Finalize,
-  JSCLASS_NO_OPTIONAL_MEMBERS
-};
-
-JSPropertySpec RILMessageEvent::sProperties[] = {
-  { "data", SLOT_data, PROPERTY_FLAGS, GetProperty,
-    js_GetterOnlyPropertyStub },
-  { 0, 0, 0, NULL, NULL }
-};
-
 Event*
 Event::GetPrivate(JSContext* aCx, JSObject* aObj)
 {
@@ -1211,8 +1062,7 @@ Event::GetPrivate(JSContext* aCx, JSObject* aObj)
     if (IsThisClass(classPtr) ||
         MessageEvent::IsThisClass(classPtr) ||
         ErrorEvent::IsThisClass(classPtr) ||
-        classPtr == ProgressEvent::Class() ||
-        classPtr == RILMessageEvent::Class()) {
+        classPtr == ProgressEvent::Class()) {
       return GetJSPrivateSafeish<Event>(aCx, aObj);
     }
   }
@@ -1231,14 +1081,6 @@ InitClasses(JSContext* aCx, JSObject* aGlobal, bool aMainRuntime)
   JSObject* eventProto = Event::InitClass(aCx, aGlobal, aMainRuntime);
   if (!eventProto) {
     return false;
-  }
-
-  if (!aMainRuntime) {
-    WorkerPrivate* worker = GetWorkerPrivateFromContext(aCx);
-    if (worker->IsChromeWorker() &&
-        !RILMessageEvent::InitClass(aCx, aGlobal, eventProto)) {
-      return false;
-    }
   }
 
   return MessageEvent::InitClass(aCx, aGlobal, eventProto, aMainRuntime) &&
@@ -1279,18 +1121,6 @@ CreateProgressEvent(JSContext* aCx, JSString* aType, bool aLengthComputable,
   JSObject* global = JS_GetGlobalForScopeChain(aCx);
   return ProgressEvent::Create(aCx, global, aType, aLengthComputable, aLoaded,
                                aTotal);
-}
-
-JSObject*
-CreateRILMessageEvent(JSContext* aCx, const char* aData, size_t aLength)
-{
-  JSString* type = JS_InternString(aCx, "RILMessageEvent");
-  if (!type) {
-    return NULL;
-  }
-
-  JSObject* global = JS_GetGlobalForScopeChain(aCx);
-  return RILMessageEvent::Create(aCx, global, type, aData, aLength);
 }
 
 bool
