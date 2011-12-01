@@ -70,13 +70,6 @@ const PARCEL_SIZE_SIZE = UINT32_SIZE;
 const RESPONSE_TYPE_SOLICITED = 0;
 const RESPONSE_TYPE_UNSOLICITED = 1;
 
-if (!this.debug) {
-  // Debugging stub that goes nowhere.
-  this.debug = function debug(str) {
-	dump(str + "\n");
-  };
-}
-
 /**
  * This object contains helpers buffering incoming data & deconstructing it
  * into parcels as well as buffering outgoing data & constructing parcels.
@@ -134,7 +127,6 @@ let Buf = {
    */
 
   readUint8: function readUint8() {
-    //debug("Reading at " + this.incomingReadIndex);
     let value = this.incomingBytes[this.incomingReadIndex];
     this.incomingReadIndex = (this.incomingReadIndex + 1) %
                              this.INCOMING_BUFFER_LENGTH;
@@ -175,7 +167,11 @@ let Buf = {
     if (!(string_len % 2)) {
       delimiter += this.readUint16();
     }
-    debug("String delimiter: " + delimiter);
+    if (DEBUG) {
+      if (delimiter != 0) {
+        debug("Something's wrong, found string delimiter: " + delimiter);
+      }
+    }
     return s;
   },
 
@@ -271,8 +267,10 @@ let Buf = {
     // new data to the buffer. So the only edge case we need to handle
     // is when the incoming data is larger than the buffer size.
     if (incoming.length > this.INCOMING_BUFFER_LENGTH) {
-      debug("Current buffer of " + this.INCOMING_BUFFER_LENGTH +
-            " can't handle incoming " + incoming.length + " bytes ");
+      if (DEBUG) {
+        debug("Current buffer of " + this.INCOMING_BUFFER_LENGTH +
+              " can't handle incoming " + incoming.length + " bytes ");
+      }
       let oldBytes = this.incomingBytes;
       while (this.INCOMING_BUFFER_LENGTH < incoming.length) {
         this.INCOMING_BUFFER_LENGTH *= 2;
@@ -296,7 +294,9 @@ let Buf = {
         this.incomingReadIndex = 0;
         this.incomingWriteIndex += head.length;
       }
-      debug("New incoming buffer size is " + this.INCOMING_BUFFER_LENGTH);
+      if (DEBUG) {
+        debug("New incoming buffer size is " + this.INCOMING_BUFFER_LENGTH);
+      }
     }
 
     // We can let the typed arrays do the copying if the incoming data won't
@@ -462,12 +462,6 @@ let Buf = {
     this.sendParcel();
   }
 };
-
-Buf.init();
-
-addEventListener("RILMessageEvent", function onRILMessageEvent(event) {
-  Buf.processIncoming(event.data);
-});
 
 
 /**
@@ -667,18 +661,18 @@ RIL[RIL_REQUEST_ENTER_NETWORK_DEPERSONALIZATION] = null;
 RIL[RIL_REQUEST_GET_CURRENT_CALLS] = function RIL_REQUEST_GET_CURRENT_CALLS() {
   let calls = [];
   let calls_length = Buf.readUint32();
-  debug("No. of current calls: " + calls_length);
-/*
+
   for (let i = 0; i < calls_length; i++) {
     let dc = {
       state:              Buf.readUint32(), // CALLSTATE_* constants
       index:              Buf.readUint32(),
-      TOA:                Buf.readUint32(),
-      isMpty:             (0 != Buf.readUint32()),
-      isMT:               (0 != Buf.readUint32()),
+      toa:                Buf.readUint32(),
+      isMpty:             Boolean(Buf.readUint32()),
+      isMT:               Boolean(Buf.readUint32()),
       als:                Buf.readUint32(),
-      isVoice:            (0 == Buf.readUint32()) ? false : true,
-      isVoicePrivacy:     (0 != Buf.readUint32()),
+      isVoice:            Boolean(Buf.readUint32()),
+      isVoicePrivacy:     Boolean(Buf.readUint32()),
+      somethingOrOther:   Buf.readUint32(), //XXX TODO whatziz? not in ril.h, but it's in the output...
       number:             Buf.readString(), //TODO munge with TOA
       numberPresentation: Buf.readUint32(), // Connection.PRESENTATION XXX TODO
       name:               Buf.readString(),
@@ -695,7 +689,7 @@ RIL[RIL_REQUEST_GET_CURRENT_CALLS] = function RIL_REQUEST_GET_CURRENT_CALLS() {
     }
     calls.push(dc);
   }
-*/
+
   Phone.onCurrentCalls(calls);
 };
 RIL[RIL_REQUEST_DIAL] = null;
@@ -895,7 +889,7 @@ let Phone = {
   /**
    * One of the RADIOSTATE_* constants.
    */
-  radioState: null,
+  radioState: RADIOSTATE_UNAVAILABLE,
 
   /**
    * Strings
@@ -925,7 +919,13 @@ let Phone = {
   iccStatus: null,
 
   /**
-   * Handlers for messages from the RIL. They all begin with on*.
+   * Active calls
+   */
+  calls: null,
+
+  /**
+   * Handlers for messages from the RIL. They all begin with on* and are called
+   * from RIL object.
    */
 
   onRadioStateChanged: function onRadioStateChanged(newState) {
@@ -943,11 +943,7 @@ let Phone = {
                newState == RADIOSTATE_RUIM_LOCKED_OR_ABSENT ||
                newState == RADIOSTATE_NV_NOT_READY          ||
                newState == RADIOSTATE_NV_READY;
-	
-	if(this.radioState == null) {
-	  RIL.setRadioPower(true);
-	}
-	
+
     // Figure out state transitions and send out more RIL requests as necessary
     // as well as events to the main thread.
 
@@ -967,15 +963,22 @@ let Phone = {
         type: "radiostatechange",
         radioState: (newState == RADIOSTATE_OFF) ? "off" : "ready"
       });
+
+      //XXX TODO For now, just turn the radio on if it's off. for the real
+      // deal we probably want to do the opposite: start with a known state
+      // when we boot up and let the UI layer control the radio power.
+      if (newState == RADIOSTATE_OFF) {
+        RIL.setRadioPower(true);
+      }
     }
 
     if (newState == RADIOSTATE_UNAVAILABLE) {
       // The radio is no longer available, we need to deal with any
       // remaining pending requests.
       //TODO do that
+
       this.sendDOMMessage({type: "radiostatechange",
                            radioState: "unavailable"});
-	  
     }
 
     if (newState == RADIOSTATE_SIM_READY  ||
@@ -1012,6 +1015,8 @@ let Phone = {
   onCurrentCalls: function onCurrentCalls(calls) {
     debug("onCurrentCalls");
     debug(calls);
+    //TODO 
+    this.sendDOMMessage({type: "callstatechange", callState: calls});
   },
 
   onCallStateChanged: function onCallStateChanged() {
@@ -1082,7 +1087,8 @@ let Phone = {
 
   onSignalStrength: function onSignalStrength(strength) {
     debug("Signal strength " + JSON.stringify(strength));
-    //TODO
+    this.sendDOMMessage({type: "signalstrengthchange",
+                         signalStrength: strength});
   },
 
   onSendSMS: function onSendSMS(messageRef, ackPDU, errorCode) {
@@ -1091,7 +1097,16 @@ let Phone = {
 
 
   /**
-   * Outgoing requests to the RIL.
+   * Outgoing requests to the RIL. These can be triggered from the
+   * main thread via messages that look like this:
+   *
+   *   {type:  "methodName",
+   *    extra: "parameters",
+   *    go:    "here"}
+   *
+   * So if one of the following methods takes arguments, it takes only one,
+   * an object, which then contains all of the parameters as attributes.
+   * The "@param" documentation is to be interpreted accordingly.
    */
 
   /**
@@ -1111,8 +1126,8 @@ let Phone = {
    * @param number
    *        String containing the number to dial.
    */
-  dial: function dial(number) {
-    RIL.dial(number, 0, 0);
+  dial: function dial(options) {
+    RIL.dial(options.number, 0, 0);
   },
 
   /**
@@ -1123,8 +1138,8 @@ let Phone = {
    * @param message
    *        String containing the message text.
    */
-  sendSMS: function sendSMS(number, message) {
-    //TODO munge number and message into PDU format
+  sendSMS: function sendSMS(options) {
+    //TODO munge options.number and options.message into PDU format
     let smscPDU = "";
     let pdu = "";
     RIL.sendSMS(smscPDU, pdu);
@@ -1137,12 +1152,13 @@ let Phone = {
    *        Object containing the message. Messages are supposed 
    */
   handleDOMMessage: function handleMessage(message) {
-    let method = this[message.method];
+    if (DEBUG) debug("Received DOM message " + JSON.stringify(message));
+    let method = this[message.type];
     if (typeof method != "function") {
       debug("Don't know what to do with message " + JSON.stringify(message));
       return;
     }
-    method.apply(this, message.arguments);
+    method.call(this, message);
   },
 
   /**
@@ -1154,6 +1170,24 @@ let Phone = {
 
 };
 
-onmessage = function onmessage(event) {
+
+/**
+ * Global stuff.
+ */
+
+if (!this.debug) {
+  // Debugging stub that goes nowhere.
+  this.debug = function debug() {};
+}
+
+// Initialize buffers. This is a separate function so that unit tests can
+// re-initialize the buffers at will.
+Buf.init();
+
+function onRILMessage(data) {
+  Buf.processIncoming(data);
+};
+
+function onmessage(event) {
   Phone.handleDOMMessage(event.data);
 };
