@@ -435,11 +435,9 @@ Worker::GetInstancePrivate(JSContext* aCx, JSObject* aObj,
     }
   }
 
-  if (aFunctionName) {
-    JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL, JSMSG_INCOMPATIBLE_PROTO,
-                         sClass.name, aFunctionName,
-                         classPtr ? classPtr->name : "object");
-  }
+  JS_ReportErrorNumber(aCx, js_GetErrorMessage, NULL, JSMSG_INCOMPATIBLE_PROTO,
+                       sClass.name, aFunctionName,
+                       classPtr ? classPtr->name : "object");
   return NULL;
 }
 
@@ -470,13 +468,24 @@ ClearPrivateSlot(JSContext* aCx, JSObject* aObj, bool aSaveEventHandlers)
   }
 }
 
-WorkerPrivate*
-GetInstancePrivate(JSContext* aCx, JSObject* aObj)
+} // namespace worker
+
+WorkerCrossThreadDispatcher*
+GetWorkerCrossThreadDispatcher(JSContext* aCx, jsval aWorker)
 {
-  return Worker::GetInstancePrivate(aCx, aObj, NULL);
+  if (JSVAL_IS_PRIMITIVE(aWorker)) {
+    return NULL;
+  }
+
+  WorkerPrivate* w =
+      Worker::GetInstancePrivate(aCx, JSVAL_TO_OBJECT(aWorker),
+                                 "GetWorkerCrossThreadDispatcher");
+  if (!w) {
+    return NULL;
+  }
+  return w->GetCrossThreadDispatcher();
 }
 
-} // namespace worker
 
 namespace chromeworker {
 

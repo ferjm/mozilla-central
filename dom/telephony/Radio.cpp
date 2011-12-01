@@ -140,7 +140,7 @@ SetHandler(JSContext *cx, JSObject *workerobj, JSNative native, const char *name
 
 class ConnectWorkerToRIL : public WorkerTask {
 public:
-  virtual void RunTask(JSContext *aCx);
+  virtual bool RunTask(JSContext *aCx);
 };
 
 JSBool
@@ -203,7 +203,7 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
   return true;
 }
 
-void
+bool
 ConnectWorkerToRIL::RunTask(JSContext *aCx)
 {
   // Set up the postRILMessage on the function for worker -> RIL thread
@@ -212,15 +212,7 @@ ConnectWorkerToRIL::RunTask(JSContext *aCx)
   NS_ASSERTION(!JS_IsRunning(aCx), "Are we being called somehow?");
   JSObject *workerGlobal = JS_GetGlobalObject(aCx);
 
-  JSAutoRequest ar(aCx);
-  JSAutoEnterCompartment ac;
-  if (!ac.enter(aCx, workerGlobal)) {
-    return;
-  }
-
-  if (!JS_DefineFunction(aCx, workerGlobal, "postRILMessage", PostToRIL, 1, 0)) {
-    return;
-  }
+  return JS_DefineFunction(aCx, workerGlobal, "postRILMessage", PostToRIL, 1, 0);
 }
 
 class RILReceiver : public RilConsumer

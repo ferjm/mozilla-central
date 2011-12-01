@@ -89,7 +89,7 @@ public:
 
     virtual ~WorkerTask() { }
 
-    virtual void RunTask(JSContext* aCx) = 0;
+    virtual bool RunTask(JSContext* aCx) = 0;
 };
 
 class WorkerCrossThreadDispatcher {
