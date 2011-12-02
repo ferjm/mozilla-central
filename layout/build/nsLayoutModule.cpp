@@ -125,10 +125,13 @@
 #include "nsDOMStorage.h"
 #include "nsJSON.h"
 #include "mozilla/dom/indexedDB/IndexedDatabaseManager.h"
-#include "Radio.h"
 
 using mozilla::dom::indexedDB::IndexedDatabaseManager;
+
+#ifdef MOZ_B2G_RIL
+#include "Radio.h"
 using mozilla::dom::telephony::Radio;
+#endif
 
 // Editor stuff
 #include "nsEditorCID.h"
@@ -317,7 +320,11 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsDOMStorageManager,
 NS_GENERIC_FACTORY_CONSTRUCTOR(nsChannelPolicy)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(IndexedDatabaseManager,
                                          IndexedDatabaseManager::FactoryCreate)
+#ifdef MOZ_B2G_RIL
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(Radio, Radio::FactoryCreate)
+#endif
+
+
 
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
@@ -824,7 +831,9 @@ NS_DEFINE_NAMED_CID(NS_DOMSTORAGEMANAGER_CID);
 NS_DEFINE_NAMED_CID(NS_DOMJSON_CID);
 NS_DEFINE_NAMED_CID(NS_TEXTEDITOR_CID);
 NS_DEFINE_NAMED_CID(INDEXEDDB_MANAGER_CID);
+#ifdef MOZ_B2G_RIL
 NS_DEFINE_NAMED_CID(TELEPHONYRADIO_CID);
+#endif
 #ifdef ENABLE_EDITOR_API_LOG
 NS_DEFINE_NAMED_CID(NS_HTMLEDITOR_CID);
 #else
@@ -960,7 +969,9 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kNS_DOMJSON_CID, false, NULL, NS_NewJSON },
   { &kNS_TEXTEDITOR_CID, false, NULL, nsPlaintextEditorConstructor },
   { &kINDEXEDDB_MANAGER_CID, false, NULL, IndexedDatabaseManagerConstructor },
+#ifdef MOZ_B2G_RIL
   { &kTELEPHONYRADIO_CID, true, NULL, RadioConstructor },
+#endif
 #ifdef ENABLE_EDITOR_API_LOG
   { &kNS_HTMLEDITOR_CID, false, NULL, nsHTMLEditorLogConstructor },
 #else
@@ -1090,7 +1101,9 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/dom/json;1", &kNS_DOMJSON_CID },
   { "@mozilla.org/editor/texteditor;1", &kNS_TEXTEDITOR_CID },
   { INDEXEDDB_MANAGER_CONTRACTID, &kINDEXEDDB_MANAGER_CID },
+#ifdef MOZ_B2G_RIL  
   { TELEPHONYRADIO_CONTRACTID, &kTELEPHONYRADIO_CID },
+#endif
 #ifdef ENABLE_EDITOR_API_LOG
   { "@mozilla.org/editor/htmleditor;1", &kNS_HTMLEDITOR_CID },
 #else
@@ -1151,7 +1164,9 @@ static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
 
   // This probably should be "app-startup" but we want our testing extension to
   // be able to override the contractid so we wait until "profile-after-change".
+#ifdef MOZ_B2G_RIL
   { "profile-after-change", "Telephony Radio", TELEPHONYRADIO_CONTRACTID },
+#endif
   { NULL }
 };
 
