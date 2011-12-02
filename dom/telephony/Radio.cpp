@@ -245,9 +245,6 @@ Radio::Init()
   }
 
   JSObject *workerobj = JSVAL_TO_OBJECT(workerval);
-  rv = nsContentUtils::XPConnect()->HoldObject(cx, workerobj,
-                                               getter_AddRefs(mWorker));
-  NS_ENSURE_SUCCESS(rv, rv);
 
   JSAutoRequest ar(cx);
   JSAutoEnterCompartment ac;
@@ -269,6 +266,9 @@ Radio::Init()
   mozilla::RefPtr<RILReceiver> receiver = new RILReceiver(wctd);
   StartRil(receiver);
 
+  mRadioInterface = do_QueryInterface(worker);
+  NS_ENSURE_TRUE(mRadioInterface, NS_ERROR_FAILURE);
+
   return NS_OK;
 }
 
@@ -278,7 +278,7 @@ Radio::Shutdown()
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
   StopRil();
-  mWorker = nsnull;
+  mRadioInterface = nsnull;
 
   mShutdown = true;
 }
@@ -302,6 +302,21 @@ Radio::FactoryCreate()
 
   return instance.forget();
 }
+
+// static
+already_AddRefed<nsIRadioInterface>
+Radio::GetRadioInterface()
+{
+  NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
+
+  if (gInstance) {
+    nsCOMPtr<nsIRadioInterface> retval = gInstance->mRadioInterface;
+    return retval.forget();
+  }
+
+  return nsnull;
+}
+
 
 NS_IMPL_ISUPPORTS1(Radio, nsIObserver)
 

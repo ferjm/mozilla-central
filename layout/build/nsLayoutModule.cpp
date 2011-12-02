@@ -319,6 +319,25 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(IndexedDatabaseManager,
                                          IndexedDatabaseManager::FactoryCreate)
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(Radio, Radio::FactoryCreate)
 
+//TODO documentme
+static nsresult
+RadioInterfaceConstructor(nsISupports *aOuter, REFNSIID aIID, void **aResult)
+{
+  if (NULL != aOuter) {
+    return NS_ERROR_NO_AGGREGATION;
+  }
+
+  nsCOMPtr<nsIRadioInterface> inst = Radio::GetRadioInterface();
+  if (NULL == inst) {
+    return NS_ERROR_OUT_OF_MEMORY;
+  }
+
+  *aResult = inst.get();
+  inst.forget();
+
+  return NS_OK;
+}
+
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
     defined(_WINDOWS)   || \
@@ -825,6 +844,7 @@ NS_DEFINE_NAMED_CID(NS_DOMJSON_CID);
 NS_DEFINE_NAMED_CID(NS_TEXTEDITOR_CID);
 NS_DEFINE_NAMED_CID(INDEXEDDB_MANAGER_CID);
 NS_DEFINE_NAMED_CID(TELEPHONYRADIO_CID);
+NS_DEFINE_NAMED_CID(TELEPHONYRADIOINTERFACE_CID);
 #ifdef ENABLE_EDITOR_API_LOG
 NS_DEFINE_NAMED_CID(NS_HTMLEDITOR_CID);
 #else
@@ -961,6 +981,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kNS_TEXTEDITOR_CID, false, NULL, nsPlaintextEditorConstructor },
   { &kINDEXEDDB_MANAGER_CID, false, NULL, IndexedDatabaseManagerConstructor },
   { &kTELEPHONYRADIO_CID, true, NULL, RadioConstructor },
+  { &kTELEPHONYRADIOINTERFACE_CID, true, NULL, RadioInterfaceConstructor },
 #ifdef ENABLE_EDITOR_API_LOG
   { &kNS_HTMLEDITOR_CID, false, NULL, nsHTMLEditorLogConstructor },
 #else
@@ -1091,6 +1112,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
   { "@mozilla.org/editor/texteditor;1", &kNS_TEXTEDITOR_CID },
   { INDEXEDDB_MANAGER_CONTRACTID, &kINDEXEDDB_MANAGER_CID },
   { TELEPHONYRADIO_CONTRACTID, &kTELEPHONYRADIO_CID },
+  { TELEPHONYRADIOINTERFACE_CONTRACTID, &kTELEPHONYRADIOINTERFACE_CID },
 #ifdef ENABLE_EDITOR_API_LOG
   { "@mozilla.org/editor/htmleditor;1", &kNS_HTMLEDITOR_CID },
 #else
