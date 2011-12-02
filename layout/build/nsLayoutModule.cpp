@@ -323,7 +323,10 @@ NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(IndexedDatabaseManager,
 #ifdef MOZ_B2G_RIL
 NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(Radio, Radio::FactoryCreate)
 
-//TODO documentme
+// The 'Radio' class controls the lifetime of the nsITelephonyWorker object
+// which is also an nsIRadioInterface, so we don't want to register it as a
+// global service on app-startup. Instead, we'll (ab)use createInstance()
+// to always return the one singleton that 'Radio' holds on to.
 static nsresult
 RadioInterfaceConstructor(nsISupports *aOuter, REFNSIID aIID, void **aResult)
 {
