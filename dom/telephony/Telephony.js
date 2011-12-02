@@ -170,7 +170,7 @@ TelephonyRadioCallback.prototype = {
   },
 
   oncallstatechange: function oncallstatechange(callState) {
-    //TODO
+    this.telephony._processCallState(callState);
   },
 
 };
@@ -210,8 +210,11 @@ Telephony.prototype = {
     this.liveCalls = [];
 
     let initialState = this.radioInterface.initialState;
-    this.operator = initialState.operator;
-    //TODO
+    this.operator        = initialState.operator;
+    this.radioState      = initialState.radioState;
+    this.cardState       = initialState.cardState;
+    this.signalStrength  = initialState.signalStrength;
+    this._processCallState(initialState.callState);
   },
 
   _dispatchEventByType: function _dispatchEventByType(type) {
@@ -219,6 +222,10 @@ Telephony.prototype = {
     event.initEvent(type, false, false);
     //event.isTrusted = true;
     this.dispatchEvent(event);
+  },
+
+  _processCallState: function _processCallState(callState) {
+    //TODO
   },
 
   // mozIDOMTelephony
