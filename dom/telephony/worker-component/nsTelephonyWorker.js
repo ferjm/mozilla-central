@@ -20,6 +20,7 @@
  *
  * Contributor(s):
  *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
+ *   Philipp von Weitershausen <philipp@weitershausen.de>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -35,53 +36,124 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
+const {classes: Cc, interfaces: Ci, utils: Cu, results: Cr} = Components;
 
-const DEBUG = false; /* set to false to suppress debug messages */
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-const TELEPHONYWORKER_CONTRACTID        = "@mozilla.org/telephony/worker;1";
-const TELEPHONYWORKER_CID               = Components.ID("{2d831c8d-6017-435b-a80c-e5d422810cea}");
-const nsITelephonyWorker                = Components.interfaces.nsITelephonyWorker;
+const DEBUG = true; // set to false to suppress debug messages
 
-function onerror(evt) {
-    // It is very important to call preventDefault on the event here.
-    // If an exception is thrown on the worker, it bubbles out to the component
-    // that created it. If that component doesn't have an onerror handler, the
-    // worker will try to call the error reporter on the context it was created
-    // on. However, That doesn't work for component contexts and can result in
-    // crashes. This onerror handler has to make sure that it calls preventDefault
-    // on the incoming event.
+const TELEPHONYWORKER_CONTRACTID = "@mozilla.org/telephony/worker;1";
+const TELEPHONYWORKER_CID        = Components.ID("{2d831c8d-6017-435b-a80c-e5d422810cea}");
 
-    evt.preventDefault();
-
-    dump("Got an error: " + evt.filename + ":" +
-         evt.lineno + ": " + evt.message + "\n");
-}
-
-function onmessage(evt) {
-    dump("Received from worker: " + JSON.stringify(evt.data) + "\n");
-}
 
 function nsTelephonyWorker() {
-    var worker = this.worker =
-        new ChromeWorker("resource://gre/modules/ril_worker.js");
-    worker.onerror = onerror;
-    worker.onmessage = onmessage;
+  this.worker = new ChromeWorker("resource://gre/modules/ril_worker.js");
+  this.worker.onerror = this.onerror.bind(this);
+  this.worker.onmessage = this.onmessage.bind(this);
+
+  this._callbacks = [];
+  this.initialState = {};
 }
+nsTelephonyWorker.prototype = {
 
-nsTelephonyWorker.prototype.classID = TELEPHONYWORKER_CID;
+  classID:   TELEPHONYWORKER_CID,
+  classInfo: XPCOMUtils.generateCI({classID: TELEPHONYWORKER_CID,
+                                    contractID: TELEPHONYWORKER_CONTRACTID,
+                                    classDescription: "TelephonyWorker",
+                                    interfaces: [Ci.nsITelephonyWorker,
+                                                 Ci.nsIRadioInterface]}),
 
-nsTelephonyWorker.prototype.classInfo = XPCOMUtils.generateCI({classID: TELEPHONYWORKER_CID,
-															   contractID: TELEPHONYWORKER_CONTRACTID,
-															   classDescription: "TelephonyWorker",
-															   interfaces: [nsITelephonyWorker]});
+  QueryInterface: XPCOMUtils.generateQI([Ci.nsITelephonyWorker,
+                                         Ci.nsIRadioInterface]),
 
-nsTelephonyWorker.prototype.QueryInterface = XPCOMUtils.generateQI([nsITelephonyWorker]);
+  onerror: function onerror(event) {
+    // It is very important to call preventDefault on the event here.
+    // If an exception is thrown on the worker, it bubbles out to the
+    // component that created it. If that component doesn't have an
+    // onerror handler, the worker will try to call the error reporter
+    // on the context it was created on. However, That doesn't work
+    // for component contexts and can result in crashes. This onerror
+    // handler has to make sure that it calls preventDefault on the
+    // incoming event.
+    event.preventDefault();
 
-var NSGetFactory = XPCOMUtils.generateNSGetFactory([nsTelephonyWorker]);
+    debug("Got an error: " + event.filename + ":" +
+          event.lineno + ": " + event.message + "\n");
+  },
 
-/* static functions */
-if (DEBUG)
-  debug = function (s) { dump("-*- TelephonyWorker component: " + s + "\n"); }
-else
-  debug = function (s) {}
+  onmessage: function onmessage(event) {
+    let message = event.data;
+    debug("Received message: " + JSON.stringify(message));
+    let value;
+    switch (message.type) {
+      case "signalstrengthchange":
+        this.initialState.signalStrength = message.signalStrength;
+        value = message.signalStrength;
+        break;
+      case "operatorchange":
+        this.initialState.operator = message.operator;
+        value = message.operator;
+        break;
+      case "onradiostatechange":
+        this.initialState.radioState = message.radioState;
+        value = message.radioState;
+        break;
+      case "cardstatechange":
+        this.initialState.cardState = message.cardState;
+        value = message.cardState;
+        break;
+      case "callstatechange":
+        this.initialState.callState = message.callState;
+        value = message.callState;
+        break;
+      default:
+        // Got some message from the RIL worker that we don't know about.
+    }
+    this._callbacks.forEach(function (callback) {
+      let method = callback[methodname];
+      if (typeof method != "function") {
+        return;
+      }
+      method.call(callback, value);
+    });
+  },
+
+  // nsITelephonWorker
+
+  worker: null,
+
+  // nsIRadioInterface
+
+  initialState: null,
+
+  dial: function dial(number) {
+    debug("Dialing " + number);
+    this.worker.postMessage({type: "dial", number: number});
+  },
+
+  _callbacks: null,
+
+  registerCallback: function registerCallback(callback) {
+    this._callbacks.push(callback);
+  },
+
+  unregisterCallback: function unregisterCallback(callback) {
+    let index = this._callbacks.indexOf(callback);
+    if (index == -1) {
+      throw "Callback not registered!";
+    }
+    this._callbacks.splice(index, 1);
+  },
+
+};
+
+const NSGetFactory = XPCOMUtils.generateNSGetFactory([nsTelephonyWorker]);
+
+let debug;
+if (DEBUG) {
+  debug = function (s) {
+    dump("-*- TelephonyWorker component: " + s + "\n");
+  };
+} else {
+  debug = function (s) {};
+}
