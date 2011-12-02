@@ -50,6 +50,8 @@
 #include <sys/types.h>
 #endif
 
+#include <signal.h>
+
 #include "base/eintr_wrapper.h"
 #include "base/message_loop.h"
 #include "mozilla/FileUtils.h"
@@ -74,7 +76,8 @@ namespace mozilla {
 namespace ipc {
 
 struct RilClient : public RefCounted<RilClient>,
-                   public MessageLoopForIO::Watcher
+                   public MessageLoopForIO::Watcher,
+                   public MessageLoopForIO::SignalWatcher
 
 {
     typedef queue<RilMessage*> RilMessageQueue;
@@ -87,12 +90,13 @@ struct RilClient : public RefCounted<RilClient>,
 
     bool OpenSocket();
 
+    virtual void OnFileCanWriteWithoutBlocking(int fd) {}
     virtual void OnFileCanReadWithoutBlocking(int fd);
-    virtual void OnFileCanWriteWithoutBlocking(int fd);
-
+    virtual void OnSignal(int sig);
+    
     ScopedClose mSocket;
     MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
-    MessageLoopForIO::FileDescriptorWatcher mWriteWatcher;
+    MessageLoopForIO::SignalEvent mWriteWatcher;    
     nsAutoPtr<RilMessage> mIncoming;
     Mutex mMutex;
     RilMessageQueue mOutgoingQ;
@@ -197,9 +201,14 @@ RilClient::OpenSocket()
     MessageLoopForIO* ioLoop = MessageLoopForIO::current();
     if (!ioLoop->WatchFileDescriptor(mSocket.mFd,
                                      true,
-                                     MessageLoopForIO::WATCH_READ_WRITE,
+                                     MessageLoopForIO::WATCH_READ,
                                      &mReadWatcher,
                                      this)) {
+        return false;
+    }
+    if (!ioLoop->CatchSignal(63,
+                             &mWriteWatcher,
+                             this)) {
         return false;
     }
 
@@ -217,6 +226,10 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
             int ret = read(fd, mIncoming->mData, 1024);
             if(ret <= 0)
             {
+                struct timespec t, r;
+                t.tv_sec = 0;
+                t.tv_nsec = 10000;
+                nanosleep(&t, &r);
                 LOG("Cannot read from network, error %d\n", ret);
                 return;
             }
@@ -225,10 +238,14 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
             sConsumer->MessageReceived(mIncoming.forget());
             if(ret < 1024)
             {
+                struct timespec t, r;
+                t.tv_sec = 0;
+                t.tv_nsec = 10000;
+                nanosleep(&t, &r);
                 return;
             }
         }
-
+        
         // Keep reading data until either
         //
         //   - mIncoming is completely read
@@ -241,9 +258,9 @@ RilClient::OnFileCanReadWithoutBlocking(int fd)
 }
 
 void
-RilClient::OnFileCanWriteWithoutBlocking(int fd)
-{
-    MOZ_ASSERT(fd == mSocket.mFd);
+RilClient::OnSignal(int sig)//FileCanWriteWithoutBlocking(int fd)
+{    
+    //MOZ_ASSERT(fd == mSocket.mFd);
 
     /*
      * IMPLEMENT ME
@@ -258,7 +275,7 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         while (writeOffset < msg->mSize) {
             ssize_t written;
             do {
-                written = write (fd, toWrite + writeOffset,
+                written = write (mSocket.mFd, toWrite + writeOffset,
                                  msg->mSize - writeOffset);
             } while (written < 0 && errno == EINTR);
 
@@ -285,7 +302,6 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         }
         mOutgoingQ.pop();
     }
-
 }
 
 
@@ -340,7 +356,7 @@ SendRilMessage(RilMessage** aMessage)
         MutexAutoLock lock(sClient->mMutex);
         sClient->mOutgoingQ.push(msg);
     }
-
+    raise(63);
     return true;
 }
 
