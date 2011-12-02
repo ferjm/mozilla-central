@@ -43,9 +43,9 @@ include $(DEPTH)/config/autoconf.mk
 
 DIRS += chromium glue ipdl testshell
 
-#ifeq ($(OS_TARGET),Gonk) #{
+ifdef MOZ_B2G_RIL #{
 DIRS += ril
-#endif #}
+endif #}
 
 TOOL_DIRS = app
 

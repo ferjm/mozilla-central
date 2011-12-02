@@ -78,11 +78,14 @@ DIRS += \
   plugins/base \
   plugins/ipc \
   indexedDB \
-  telephony \
   system \
   ipc \
   workers \
   $(NULL)
+
+ifdef MOZ_B2G_RIL #{
+DIRS += telephony
+endif #}
 
 ifdef ENABLE_TESTS
 DIRS += tests
