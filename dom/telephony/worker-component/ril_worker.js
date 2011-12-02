@@ -1178,7 +1178,7 @@ let Phone = {
 if (!this.debug) {
   // Debugging stub that goes nowhere.
   this.debug = function debug(message) {
-    dump(message + "\n");
+    dump("RIL Worker: " + message + "\n");
   };
 }
 
@@ -1190,6 +1190,10 @@ function onRILMessage(data) {
   Buf.processIncoming(data);
 };
 
-function onmessage(event) {
+onmessage = function onmessage(event) {
   Phone.handleDOMMessage(event.data);
+};
+
+onerror = function onerror(event) {
+  debug("RIL Worker error" + event.message + "\n");
 };
