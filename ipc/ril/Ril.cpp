@@ -97,6 +97,7 @@ struct RilClient : public RefCounted<RilClient>,
     Mutex mMutex;
     RilMessageQueue mOutgoingQ;
     bool mBlockedOnWrite;
+    MessageLoopForIO* mIOLoop;
 };
 
 static const char kRilSocketName[] = "rild";
@@ -107,6 +108,14 @@ static RefPtr<RilConsumer> sConsumer;
 //-----------------------------------------------------------------------------
 // This code runs on the IO thread.
 //
+
+class RILWriteTask : public Task {
+    virtual void Run();
+};
+
+void RILWriteTask::Run() {
+    sClient->OnFileCanWriteWithoutBlocking(sClient->mSocket.mFd);
+}
 
 static void
 ConnectToRil(Monitor* aMonitor, bool* aSuccess)
@@ -148,7 +157,6 @@ RilClient::OpenSocket()
     struct hostent *hp;
     struct sockaddr_in addr;
     socklen_t alen;
-    int s;
 
     hp = gethostbyname("localhost");
     if(hp == 0) return -1;
@@ -193,16 +201,14 @@ RilClient::OpenSocket()
     if (-1 == fcntl(mSocket.mFd, F_SETFL, O_NONBLOCK)) {
         return false;
     }
-
-    MessageLoopForIO* ioLoop = MessageLoopForIO::current();
-    if (!ioLoop->WatchFileDescriptor(mSocket.mFd,
-                                     true,
-                                     MessageLoopForIO::WATCH_READ_WRITE,
-                                     &mReadWatcher,
-                                     this)) {
+    mIOLoop = MessageLoopForIO::current();
+    if (!mIOLoop->WatchFileDescriptor(mSocket.mFd,
+                                      true,
+                                      MessageLoopForIO::WATCH_READ,
+                                      &mReadWatcher,
+                                      this)) {
         return false;
     }
-
     return true;
 }
 
@@ -210,7 +216,6 @@ void
 RilClient::OnFileCanReadWithoutBlocking(int fd)
 {
     MOZ_ASSERT(fd == mSocket.mFd);
-
     while (true) {
         if (!mIncoming) {
             mIncoming = new RilMessage();
@@ -277,15 +282,9 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         // Otherwise, save the byte position of the next byte to write
         // within msg, and request
         //
-        // MessageLoopForIO::current()->WatchFileDescriptor(mSocket.mFd,
-        //                                                  false,
-        //                                                  MessageLoopForIO::WATCH_WRITE,
-        //                                                  &mWriteWatcher,
-        //                                                  this);
         }
         mOutgoingQ.pop();
     }
-
 }
 
 
@@ -340,6 +339,7 @@ SendRilMessage(RilMessage** aMessage)
         MutexAutoLock lock(sClient->mMutex);
         sClient->mOutgoingQ.push(msg);
     }
+    sClient->mIOLoop->PostTask(FROM_HERE, new RILWriteTask());
 
     return true;
 }
