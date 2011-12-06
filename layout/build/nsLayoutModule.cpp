@@ -131,6 +131,7 @@ using mozilla::dom::indexedDB::IndexedDatabaseManager;
 #ifdef MOZ_B2G_RIL
 #include "RadioManager.h"
 using mozilla::dom::telephony::RadioManager;
+#include "nsITelephone.h"
 #endif
 
 // Editor stuff
