@@ -44,7 +44,6 @@
 #include "jsapi.h"
 #include "jscntxt.h"
 #include "jsfriendapi.h"
-#include "jstypedarray.h"
 
 #include "nsTraceRefcnt.h"
 
