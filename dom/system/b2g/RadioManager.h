@@ -1,3 +1,5 @@
+/* -*- Mode: c++; c-basic-offset: 2; indent-tabs-mode: nil; tab-width: 40 -*- */
+/* vim: set ts=2 et sw=2 tw=40: */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -35,17 +37,65 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "nsISupports.idl"
+#ifndef mozilla_dom_telephony_radio_h__
+#define mozilla_dom_telephony_radio_h__
 
-[scriptable, uuid(8f031451-ac25-4816-a09e-a075bb704e63)]
-interface nsITelephonyWorker : nsISupports {
-    readonly attribute jsval worker;
+#include "jsapi.h"
+#include "nsComponentManagerUtils.h"
+#include "nsCOMPtr.h"
+#include "nsDebug.h"
+#include "nsServiceManagerUtils.h"
+
+#include "nsIObserver.h"
+#include "mozilla/ipc/Ril.h"
+#include "nsITelephone.h"
+
+#define TELEPHONYRADIO_CONTRACTID "@mozilla.org/telephony/radio;1"
+#define TELEPHONYRADIOINTERFACE_CONTRACTID "@mozilla.org/telephony/radio-interface;1"
+
+#define BEGIN_TELEPHONY_NAMESPACE \
+  namespace mozilla { namespace dom { namespace telephony {
+#define END_TELEPHONY_NAMESPACE \
+  } /* namespace telephony */ } /* namespace dom */ } /* namespace mozilla */
+#define USING_TELEPHONY_NAMESPACE \
+  using namespace mozilla::dom::telephony;
+
+// {a5c3a6de-84c4-4b15-8611-8aeb8d97f8ba}
+#define TELEPHONYRADIO_CID \
+  {0xa5c3a6de, 0x84c4, 0x4b15, {0x86, 0x11, 0x8a, 0xeb, 0x8d, 0x97, 0xf8, 0xba}}
+
+// {a688f191-8ffc-47f3-8740-94a312cf59cb}}
+#define TELEPHONYRADIOINTERFACE_CID \
+  {0xd66e7ece, 0x41b1, 0x4608, {0x82, 0x80, 0x72, 0x50, 0xa6, 0x44, 0xe6, 0x6f}}
+
+
+class nsIXPConnectJSObjectHolder;
+
+BEGIN_TELEPHONY_NAMESPACE
+
+class RadioManager : public nsIObserver
+{
+public:
+  NS_DECL_ISUPPORTS
+  NS_DECL_NSIOBSERVER
+
+  nsresult Init();
+  void Shutdown();
+
+  static already_AddRefed<RadioManager>
+  FactoryCreate();
+
+  static already_AddRefed<nsITelephone>
+  GetTelephone();
+
+protected:
+  RadioManager();
+  ~RadioManager();
+
+  nsCOMPtr<nsITelephone> mTelephone;
+  bool mShutdown;
 };
 
-%{ C++
+END_TELEPHONY_NAMESPACE
 
-#define NS_TELEPHONYWORKER_CID \
-    { 0x2d831c8d, 0x6017, 0x435b, \
-      { 0xa8, 0x0c, 0xe5, 0xd4, 0x22, 0x81, 0x0c, 0xea } }
-
-%}
+#endif // mozilla_dom_telephony_radio_h__

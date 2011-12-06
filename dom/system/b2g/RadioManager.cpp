@@ -37,14 +37,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "Radio.h"
-#include "nsITelephonyWorker.h"
+#include "RadioManager.h"
+#include "nsIRadioWorker.h"
 #include "nsContentUtils.h"
 #include "nsIXPConnect.h"
 #include "nsIJSContextStack.h"
 #include "nsIObserverService.h"
 #include "mozilla/dom/workers/Workers.h"
 #include "jstypedarray.h"
+#include "nsTelephonyWorker.h"
 
 #include "nsThreadUtils.h"
 
@@ -68,7 +69,7 @@ USING_TELEPHONY_NAMESPACE
 namespace {
 
 // Doesn't carry a reference, we're owned by services.
-Radio* gInstance = nsnull;
+RadioManager* gInstance = nsnull;
 
 class ConnectWorkerToRIL : public WorkerTask {
 public:
@@ -194,14 +195,14 @@ RILReceiver::DispatchRILEvent::RunTask(JSContext *aCx)
 
 } // anonymous namespace
 
-Radio::Radio()
+RadioManager::RadioManager()
   : mShutdown(false)
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
   NS_ASSERTION(!gInstance, "There should only be one instance!");
 }
 
-Radio::~Radio()
+RadioManager::~RadioManager()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
   NS_ASSERTION(!gInstance || gInstance == this,
@@ -210,7 +211,7 @@ Radio::~Radio()
 }
 
 nsresult
-Radio::Init()
+RadioManager::Init()
 {
   NS_ASSERTION(NS_IsMainThread(), "We can only initialize on the main thread");
 
@@ -226,10 +227,8 @@ Radio::Init()
 
   // The telephony worker component is a hack that gives us a global object for
   // our own functions and makes creating the worker possible.
-  nsCOMPtr<nsITelephonyWorker> worker(do_CreateInstance(kTelephonyWorkerCID));
-  if (!worker) {
-    return NS_ERROR_FAILURE;
-  }
+  nsCOMPtr<nsIRadioWorker> worker(do_CreateInstance(kTelephonyWorkerCID));
+  NS_ENSURE_TRUE(worker, NS_ERROR_FAILURE);
 
   jsval workerval;
   rv = worker->GetWorker(&workerval);
@@ -266,33 +265,33 @@ Radio::Init()
   mozilla::RefPtr<RILReceiver> receiver = new RILReceiver(wctd);
   StartRil(receiver);
 
-  mRadioInterface = do_QueryInterface(worker);
-  NS_ENSURE_TRUE(mRadioInterface, NS_ERROR_FAILURE);
+  mTelephone = do_QueryInterface(worker);
+  NS_ENSURE_TRUE(mTelephone, NS_ERROR_FAILURE);
 
   return NS_OK;
 }
 
 void
-Radio::Shutdown()
+RadioManager::Shutdown()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
   StopRil();
-  mRadioInterface = nsnull;
+  mTelephone = nsnull;
 
   mShutdown = true;
 }
 
 // static
-already_AddRefed<Radio>
-Radio::FactoryCreate()
+already_AddRefed<RadioManager>
+RadioManager::FactoryCreate()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
-  nsRefPtr<Radio> instance(gInstance);
+  nsRefPtr<RadioManager> instance(gInstance);
 
   if (!instance) {
-    instance = new Radio();
+    instance = new RadioManager();
     if (NS_FAILED(instance->Init())) {
       return nsnull;
     }
@@ -304,13 +303,13 @@ Radio::FactoryCreate()
 }
 
 // static
-already_AddRefed<nsIRadioInterface>
-Radio::GetRadioInterface()
+already_AddRefed<nsITelephone>
+RadioManager::GetTelephone()
 {
   NS_ASSERTION(NS_IsMainThread(), "Wrong thread!");
 
   if (gInstance) {
-    nsCOMPtr<nsIRadioInterface> retval = gInstance->mRadioInterface;
+    nsCOMPtr<nsITelephone> retval = gInstance->mTelephone;
     return retval.forget();
   }
 
@@ -318,11 +317,11 @@ Radio::GetRadioInterface()
 }
 
 
-NS_IMPL_ISUPPORTS1(Radio, nsIObserver)
+NS_IMPL_ISUPPORTS1(RadioManager, nsIObserver)
 
 NS_IMETHODIMP
-Radio::Observe(nsISupports* aSubject, const char* aTopic,
-               const PRUnichar* aData)
+RadioManager::Observe(nsISupports* aSubject, const char* aTopic,
+                      const PRUnichar* aData)
 {
   if (!strcmp(aTopic, PROFILE_BEFORE_CHANGE_TOPIC)) {
     Shutdown();

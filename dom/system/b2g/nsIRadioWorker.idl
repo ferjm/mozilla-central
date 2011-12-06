@@ -14,12 +14,12 @@
  * The Original Code is Telephony.
  *
  * The Initial Developer of the Original Code is
- * the Mozilla Foundation.
+ *   The Mozilla Foundation.
  * Portions created by the Initial Developer are Copyright (C) 2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *  Philipp von Weitershausen <philipp@weitershausen.de>
+ *   Ben Turner <bent.mozilla@gmail.com> (Original Author)
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -37,25 +37,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(e21cdf40-c511-442b-8c7d-aa75471b0423)]
-interface nsIRadioCallback : nsISupports {
-  void oncallstatechange(in jsval callState);
-
-  //XXX philikon's additions
-  void onoperatorchange(in jsval operatorInfo);
-  void onradiostatechange(in jsval radioState);
-  void oncardstatechange(in jsval cardState);
-  void onsignalstrengthchange(in jsval signalStrength);
-};
-
-[scriptable, uuid(dda49485-5887-49bb-ba0b-10c5d116eb64)]
-interface nsIRadioInterface : nsISupports {
-
-  readonly attribute jsval initialState;
-
-  void dial(in DOMString number);
-  void hangup(in long callIndex);
-
-  void registerCallback(in nsIRadioCallback callback);
-  void unregisterCallback(in nsIRadioCallback callback);
+[scriptable, uuid(8f031451-ac25-4816-a09e-a075bb704e63)]
+interface nsIRadioWorker : nsISupports {
+    readonly attribute jsval worker;
 };
