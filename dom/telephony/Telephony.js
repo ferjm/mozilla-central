@@ -278,11 +278,9 @@ Telephony.prototype = {
   },
 
   _processCallState: function _processCallState(state) {
-dump("_processCallState: " + JSON.stringify(state) + "\n");
     // If the call is dialing, chances are good that we just kicked that off
     // so there's a call object without a callIndex. Let's fix that.
     if (state.callState == DOM_CALL_READYSTATE_DIALING) {
-dump("_processCallState: it's a new call that's dialing!");
       let call = this.callsByIndex[CALLINDEX_TEMPORARY_DIALING];
       if (call) {
         call.callIndex = state.callIndex;
@@ -298,7 +296,6 @@ dump("_processCallState: it's a new call that's dialing!");
     // on it.
     let call = this.callsByIndex[state.callIndex];
     if (call) {
-dump("_processCallState: found already existing call!");
       if (call.readyState == state.callState) {
         // No change in ready state, don't dispatch an event.
         return;
@@ -316,7 +313,6 @@ dump("_processCallState: found already existing call!");
       return;
     }
 
-dump("_processCallState: new call, let's create it.");
     // There's no call object yet, so let's create a new one, except when
     // the state notified means that the call is over.
     if (state.readyState == DOM_CALL_READYSTATE_DISCONNECTED) {
