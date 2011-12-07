@@ -340,11 +340,6 @@ RadioManager::InitWifi(JSContext *cx)
   nsCOMPtr<nsIRadioWorker> worker(do_CreateInstance(kWifiWorkerCID));
   NS_ENSURE_TRUE(worker, NS_ERROR_FAILURE);
 
-  jsval workerval;
-  nsresult rv = worker->GetWorker(&workerval);
-  NS_ENSURE_SUCCESS(rv, rv);
-  NS_ASSERTION(!JSVAL_IS_PRIMITIVE(workerval), "bad worker value");
-
   mWifi = do_QueryInterface(worker);
   NS_ENSURE_TRUE(mWifi, NS_ERROR_FAILURE);
 
