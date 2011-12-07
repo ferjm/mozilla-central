@@ -368,6 +368,8 @@
 @BINPATH@/components/nsTelephonyWorker.js
 @BINPATH@/components/Telephony.manifest
 @BINPATH@/components/Telephony.js
+@BINPATH@/components/nsWifiWorker.js
+@BINPATH@/components/nsWifiWorker.manifest
 #endif
 @BINPATH@/components/BrowserProfileMigrators.manifest
 @BINPATH@/components/ChromeProfileMigrator.js
