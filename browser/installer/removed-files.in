@@ -922,6 +922,8 @@ xpicleanup@BIN_SUFFIX@
   components/nsTelephonyWorker.js
   components/Telephony.manifest
   components/Telephony.js
+  components/nsWifiWorker.js
+  components/nsWifiWorker.manifest
 #endif
   components/txEXSLTRegExFunctions.js
   components/Weave.js
