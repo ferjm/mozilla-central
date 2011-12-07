@@ -35,6 +35,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include "nsISupports.idl"
+
 [scriptable, uuid(d2124467-7209-4b2e-a91a-cf3f90681e3c)]
 interface nsIAudioManager : nsISupports {
 
@@ -56,12 +58,12 @@ interface nsIAudioManager : nsISupports {
   /**
    * Set the phone's audio mode.
    */
-  const long PHONE_STATE_INVALID          = -2,
-  const long PHONE_STATE_CURRENT          = -1,
-  const long PHONE_STATE_NORMAL           = 0,
-  const long PHONE_STATE_RINGTONE         = 1,
-  const long PHONE_STATE_IN_CALL          = 2,
-  const long PHONE_STATE_IN_COMMUNICATION = 3,
+  const long PHONE_STATE_INVALID          = -2;
+  const long PHONE_STATE_CURRENT          = -1;
+  const long PHONE_STATE_NORMAL           = 0;
+  const long PHONE_STATE_RINGTONE         = 1;
+  const long PHONE_STATE_IN_CALL          = 2;
+  const long PHONE_STATE_IN_COMMUNICATION = 3;
 
   void setPhoneState(in long state);
 
