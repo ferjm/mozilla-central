@@ -128,7 +128,7 @@ PostToRIL(JSContext *cx, uintN argc, jsval *vp)
     return false;
   }
 
-  if (size > RilRawData::DATA_SIZE) {
+  if (size > RilRawData::MAX_DATA_SIZE) {
     JS_ReportError(cx, "Passed-in data is too large");
     return false;
   }

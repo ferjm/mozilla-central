@@ -22,7 +22,7 @@
  *
  * Contributor(s):
  *   Chris Jones <jones.chris.g@gmail.com>
- *   Kyle Machulis <kmachulis@mozilla.com>
+ *   Kyle Machulis <kyle@nonpolynomial.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -43,12 +43,10 @@
 
 #include <queue>
 
-#if defined(MOZ_WIDGET_GONK)
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/select.h>
 #include <sys/types.h>
-#endif
 
 #include "base/eintr_wrapper.h"
 #include "base/message_loop.h"
@@ -99,7 +97,7 @@ struct RilClient : public RefCounted<RilClient>,
     RilRawDataQueue mOutgoingQ;
     bool mBlockedOnWrite;
     MessageLoopForIO* mIOLoop;
-    RilRawData* mCurrentRilRawData;
+    nsAutoPtr<RilRawData> mCurrentRilRawData;
     size_t mCurrentWriteOffset;
 };
 
@@ -240,7 +238,8 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
     // Try to write the bytes of mCurrentRilRawData.  If all were written, continue.
     //
     // Otherwise, save the byte position of the next byte to write
-    // within mCurrentRilRawData, and request
+    // within mCurrentRilRawData, and request another write when the
+    // system won't block.
     //
 
     MOZ_ASSERT(fd == mSocket.mFd);
@@ -253,8 +252,8 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
         }
         const uint8_t *toWrite;
 
-        toWrite = (const uint8_t *)mCurrentRilRawData->mData;
-
+        toWrite = mCurrentRilRawData->mData;
+ 
         while (mCurrentWriteOffset < mCurrentRilRawData->mSize) {
             ssize_t write_amount = mCurrentRilRawData->mSize - mCurrentWriteOffset;
             ssize_t written;
@@ -277,7 +276,6 @@ RilClient::OnFileCanWriteWithoutBlocking(int fd)
                 this);
             return;
         }
-        delete mCurrentRilRawData;
         mCurrentRilRawData = NULL;
     }
 }

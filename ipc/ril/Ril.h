@@ -22,7 +22,7 @@
  *
  * Contributor(s):
  *   Chris Jones <jones.chris.g@gmail.com>
- *   Kyle Machulis <kmachulis@mozilla.com>
+ *   Kyle Machulis <kyle@nonpolynomial.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -61,8 +61,8 @@ namespace ipc {
  */
 struct RilRawData
 {
-    static const size_t DATA_SIZE = 1024;
-    char mData[DATA_SIZE];
+    static const size_t MAX_DATA_SIZE = 1024;
+    uint8_t mData[MAX_DATA_SIZE];
 
     // Number of octets in mData.
     size_t mSize;
