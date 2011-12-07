@@ -60,8 +60,10 @@ EXTRA_COMPONENTS = \
   $(NULL)
 
 EXTRA_JS_MODULES = \
-  wifi_library.js \
-  wifi_controller.js \
+  libcutils.js \
+  libhardware_legacy.js \
+  libnetutils.js \
+  network_worker.js \
   $(NULL)
 
 include $(topsrcdir)/config/rules.mk
