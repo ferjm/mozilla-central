@@ -77,11 +77,12 @@ struct RilClient : public RefCounted<RilClient>,
                    public MessageLoopForIO::Watcher
 
 {
-    typedef queue<RilMessage*> RilMessageQueue;
+    typedef queue<RilRawData*> RilRawDataQueue;
 
     RilClient() : mSocket(-1)
                 , mMutex("RilClient.mMutex")
                 , mBlockedOnWrite(false)
+                , mCurrentRilRawData(NULL)
     { }
     virtual ~RilClient() { }
 
@@ -93,14 +94,14 @@ struct RilClient : public RefCounted<RilClient>,
     ScopedClose mSocket;
     MessageLoopForIO::FileDescriptorWatcher mReadWatcher;
     MessageLoopForIO::FileDescriptorWatcher mWriteWatcher;
-    nsAutoPtr<RilMessage> mIncoming;
+    nsAutoPtr<RilRawData> mIncoming;
     Mutex mMutex;
-    RilMessageQueue mOutgoingQ;
+    RilRawDataQueue mOutgoingQ;
     bool mBlockedOnWrite;
     MessageLoopForIO* mIOLoop;
+    RilRawData* mCurrentRilRawData;
+    size_t mCurrentWriteOffset;
 };
-
-static const char kRilSocketName[] = "rild";
 
 static RefPtr<RilClient> sClient;
 static RefPtr<RilConsumer> sConsumer;
@@ -109,11 +110,11 @@ static RefPtr<RilConsumer> sConsumer;
 // This code runs on the IO thread.
 //
 
-class RILWriteTask : public Task {
+class RilWriteTask : public Task {
     virtual void Run();
 };
 
-void RILWriteTask::Run() {
+void RilWriteTask::Run() {
     sClient->OnFileCanWriteWithoutBlocking(sClient->mSocket.mFd);
 }
 
@@ -137,13 +138,9 @@ ConnectToRil(Monitor* aMonitor, bool* aSuccess)
 bool
 RilClient::OpenSocket()
 {
-    /*
-     * XXX IMPLEMENT ME
-     *
-     * Currently using a network socket to test basic functionality
-     * before we see how this works on the phone.
-     */
 #if defined(MOZ_WIDGET_GONK)
+    // Using a network socket to test basic functionality
+    // before we see how this works on the phone.
     struct sockaddr_un addr;
     socklen_t alen;
     size_t namelen;
@@ -159,7 +156,7 @@ RilClient::OpenSocket()
     socklen_t alen;
 
     hp = gethostbyname("localhost");
-    if(hp == 0) return -1;
+    if (hp == 0) return -1;
 
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = hp->h_addrtype;
@@ -169,22 +166,17 @@ RilClient::OpenSocket()
     alen = sizeof(addr);
 #endif
 
-    if(mSocket.mFd < 0)
-    {
+    if (mSocket.mFd < 0) {
         LOG("Cannot create socket for RIL!\n");
         return -1;
     }
 
-
-
-    if(connect(mSocket.mFd, (struct sockaddr *) &addr, alen) < 0) {
+    if (connect(mSocket.mFd, (struct sockaddr *) &addr, alen) < 0) {
         LOG("Cannot open socket for RIL!\n");
         close(mSocket.mFd);
         return false;
     }
     LOG("Socket open for RIL\n");
-
-
 
     // Set close-on-exec bit.
     int flags = fcntl(mSocket.mFd, F_GETFD);
@@ -215,75 +207,78 @@ RilClient::OpenSocket()
 void
 RilClient::OnFileCanReadWithoutBlocking(int fd)
 {
+    // Keep reading data until either
+    //
+    //   - mIncoming is completely read
+    //     If so, sConsumer->MessageReceived(mIncoming.forget())
+    //
+    //   - mIncoming isn't completely read, but there's no more
+    //     data available on the socket
+    //     If so, break;
+
     MOZ_ASSERT(fd == mSocket.mFd);
     while (true) {
         if (!mIncoming) {
-            mIncoming = new RilMessage();
+            mIncoming = new RilRawData();
             int ret = read(fd, mIncoming->mData, 1024);
-            if(ret <= 0)
-            {
+            if (ret <= 0) {
                 LOG("Cannot read from network, error %d\n", ret);
                 return;
             }
             mIncoming->mSize = ret;
-            LOG("RIL Read from network %d\n", (int)mIncoming->mSize);
             sConsumer->MessageReceived(mIncoming.forget());
-            if(ret < 1024)
-            {
+            if (ret < 1024) {
                 return;
             }
         }
-
-        // Keep reading data until either
-        //
-        //   - mIncoming is completely read
-        //     If so, sConsumer->MessageReceived(mIncoming.forget())
-        //
-        //   - mIncoming isn't completely read, but there's no more
-        //     data available on the socket
-        //     If so, break;
     }
 }
 
 void
 RilClient::OnFileCanWriteWithoutBlocking(int fd)
 {
+    // Try to write the bytes of mCurrentRilRawData.  If all were written, continue.
+    //
+    // Otherwise, save the byte position of the next byte to write
+    // within mCurrentRilRawData, and request
+    //
+
     MOZ_ASSERT(fd == mSocket.mFd);
 
-    /*
-     * IMPLEMENT ME
-     */
-    while (!mOutgoingQ.empty()) {
-        nsAutoPtr<RilMessage> msg(mOutgoingQ.front());
-        size_t writeOffset = 0;
+    while (!mOutgoingQ.empty() || mCurrentRilRawData != NULL) {
+        if(!mCurrentRilRawData) {
+            mCurrentRilRawData = mOutgoingQ.front();
+            mOutgoingQ.pop();
+            mCurrentWriteOffset = 0;
+        }
         const uint8_t *toWrite;
 
-        toWrite = (const uint8_t *)msg->mData;
+        toWrite = (const uint8_t *)mCurrentRilRawData->mData;
 
-        while (writeOffset < msg->mSize) {
+        while (mCurrentWriteOffset < mCurrentRilRawData->mSize) {
+            ssize_t write_amount = mCurrentRilRawData->mSize - mCurrentWriteOffset;
             ssize_t written;
-            do {
-                written = write (fd, toWrite + writeOffset,
-                                 msg->mSize - writeOffset);
-            } while (written < 0 && errno == EINTR);
-
-            if (written >= 0) {
-                writeOffset += written;
+            written = write (fd, toWrite + mCurrentWriteOffset,
+                             write_amount);
+            if(written > 0) {
+                mCurrentWriteOffset += written;
             }
-            else {
-                // XXX?
-                mOutgoingQ.pop();
-                perror("RIL can't write");
-                return;
+            if (written != write_amount) {
+                break;
             }
-
-        // Try to write the bytes of msg.  If all were written, continue.
-        //
-        // Otherwise, save the byte position of the next byte to write
-        // within msg, and request
-        //
         }
-        mOutgoingQ.pop();
+
+        if(mCurrentWriteOffset != mCurrentRilRawData->mSize) {
+            MessageLoopForIO::current()->WatchFileDescriptor(
+                fd,
+                false,
+                MessageLoopForIO::WATCH_WRITE,
+                &mWriteWatcher,
+                this);
+            return;
+        }
+        delete mCurrentRilRawData;
+        mCurrentRilRawData = NULL;
     }
 }
 
@@ -326,20 +321,20 @@ StartRil(RilConsumer* aConsumer)
 }
 
 bool
-SendRilMessage(RilMessage** aMessage)
+SendRilRawData(RilRawData** aMessage)
 {
     if (!sClient) {
         return false;
     }
 
-    RilMessage *msg = *aMessage;
+    RilRawData *msg = *aMessage;
     *aMessage = nsnull;
 
     {
         MutexAutoLock lock(sClient->mMutex);
         sClient->mOutgoingQ.push(msg);
     }
-    sClient->mIOLoop->PostTask(FROM_HERE, new RILWriteTask());
+    sClient->mIOLoop->PostTask(FROM_HERE, new RilWriteTask());
 
     return true;
 }

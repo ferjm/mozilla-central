@@ -52,7 +52,14 @@ class nsIThread;
 namespace mozilla {
 namespace ipc {
 
-struct RilMessage
+
+/*
+ * Represents raw data going to or coming from the RIL socket. Can
+ * actually contain multiple RIL parcels in the data block, and may
+ * also contain incomplete parcels on the front or back. Actual parcel
+ * construction is handled in the worker thread.
+ */
+struct RilRawData
 {
     static const size_t DATA_SIZE = 1024;
     char mData[DATA_SIZE];
@@ -65,12 +72,12 @@ class RilConsumer : public RefCounted<RilConsumer>
 {
 public:
     virtual ~RilConsumer() { }
-    virtual void MessageReceived(RilMessage* aMessage) { }
+    virtual void MessageReceived(RilRawData* aMessage) { }
 };
 
 bool StartRil(RilConsumer* aConsumer);
 
-bool SendRilMessage(RilMessage** aMessage);
+bool SendRilRawData(RilRawData** aMessage);
 
 void StopRil();
 
