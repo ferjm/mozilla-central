@@ -39,22 +39,55 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const CC = Components.Constructor;
 
-Cu.import('resource://gre/modules/Services.jsm');
-
 const LocalFile = CC('@mozilla.org/file/local;1',
                      'nsILocalFile',
                      'initWithPath');
+
+Cu.import('resource://gre/modules/XPCOMUtils.jsm');
+Cu.import('resource://gre/modules/Services.jsm');
+XPCOMUtils.defineLazyGetter(Services, 'env', function() {
+  return Cc['@mozilla.org/process/environment;1']
+           .getService(Ci.nsIEnvironment);
+});
+XPCOMUtils.defineLazyGetter(Services, 'ss', function() {
+  return Cc['@mozilla.org/content/style-sheet-service;1']
+           .getService(Ci.nsIStyleSheetService);
+});
+XPCOMUtils.defineLazyGetter(Services, 'fm', function() {
+  return Cc['@mozilla.org/focus-manager;1']
+           .getService(Ci.nsIFocusManager);
+});
+
+// In order to use http:// scheme instead of file:// scheme
+// (that is much more restricted) the following code kick-off
+// a local http server listening on http://127.0.0.1:8888 and
+// http://localhost:8888.
+function startupHttpd(baseDir, port) {
+  const httpdURL = 'chrome://browser/content/httpd.js';
+  let httpd = {};
+  Services.scriptloader.loadSubScript(httpdURL, httpd);
+  let server = new httpd.nsHttpServer();
+  server.registerDirectory('/', new LocalFile(baseDir));
+  server.start(port);
+}
+
+// XXX until we have a security model, just let the pre-installed
+// app used indexedDB.
+function allowIndexedDB(url) {
+  let uri = Services.io.newURI(url, null, null);
+  Services.perms.add(uri, 'indexedDB', Ci.nsIPermissionManager.ALLOW_ACTION);
+}
+
+
 var shell = {
   get home() {
     delete this.home;
     return this.home = document.getElementById('homescreen');
   },
 
-  get homeSrc() {
+  get homeURL() {
     try {
-      let homeSrc = Cc['@mozilla.org/process/environment;1']
-                      .getService(Ci.nsIEnvironment)
-                      .get('B2G_HOMESCREEN');
+      let homeSrc = Services.env.get('B2G_HOMESCREEN');
       if (homeSrc)
         return homeSrc;
     } catch (e) {}
@@ -73,16 +106,41 @@ var shell = {
   },
 
   start: function shell_init() {
+    let homeURL = this.homeURL;
+    if (!homeURL) {
+      let msg = 'Fatal error during startup: [No homescreen found]';
+      return alert(msg);
+    }
+
     window.controllers.appendController(this);
     window.addEventListener('keypress', this);
     this.home.addEventListener('load', this, true);
 
-    let ioService = Cc['@mozilla.org/network/io-service;1']
-                      .getService(Ci.nsIIOService2);
-    ioService.offline = false;
+    try {
+      Services.io.offline = false;
+
+      let fileScheme = 'file://';
+      if (homeURL.substring(0, fileScheme.length) == fileScheme) {
+        homeURL = homeURL.replace(fileScheme, '');
+
+        let baseDir = homeURL.split('/');
+        baseDir.pop();
+        baseDir = baseDir.join('/');
+
+        const SERVER_PORT = 8888;
+        startupHttpd(baseDir, SERVER_PORT);
+
+        let baseHost = 'http://localhost';
+        homeURL = homeURL.replace(baseDir, baseHost + ':' + SERVER_PORT);
+      }
+      allowIndexedDB(homeURL);
+    } catch (e) {
+      let msg = 'Fatal error during startup: [' + e + '[' + homeURL + ']';
+      return alert(msg);
+    }
 
     let browser = this.home;
-    browser.homePage = this.homeSrc;
+    browser.homePage = homeURL;
     browser.goHome();
   },
 
@@ -123,10 +181,12 @@ var shell = {
           case evt.DOM_VK_HOME:
             this.sendEvent(this.home.contentWindow, 'home');
             break;
+          case evt.DOM_VK_SLEEP:
+            screen.mozEnabled = !screen.mozEnabled;
+            break;
           case evt.DOM_VK_ESCAPE:
             if (evt.getPreventDefault())
               return;
-
             this.doCommand('cmd_close');
             break;
         }
@@ -137,7 +197,6 @@ var shell = {
         break;
     }
   },
-
   sendEvent: function shell_sendEvent(content, type, details) {
     let event = content.document.createEvent('CustomEvent');
     event.initCustomEvent(type, true, true, details ? details : {});
@@ -182,9 +241,7 @@ var shell = {
 
       let shouldOpen = parseInt(data);
       if (shouldOpen && !isKeyboardOpened) {
-        activeElement = Cc['@mozilla.org/focus-manager;1']
-                          .getService(Ci.nsIFocusManager)
-                          .focusedElement;
+        activeElement = Services.fm.focusedElement;
         if (!activeElement)
           return;
 
@@ -208,13 +265,9 @@ function MozKeyboard() {
 }
 
 MozKeyboard.prototype = {
-  get utils() {
-    delete this.utils;
-    return this.utils = window.QueryInterface(Ci.nsIInterfaceRequestor)
-                              .getInterface(Ci.nsIDOMWindowUtils);
-  },
   sendKey: function mozKeyboardSendKey(keyCode) {
-    var utils = this.utils;
+    var utils = window.QueryInterface(Ci.nsIInterfaceRequestor)
+                      .getInterface(Ci.nsIDOMWindowUtils);
     ['keydown', 'keypress', 'keyup'].forEach(function sendKeyEvents(type) {
       utils.sendKeyEvent(type, keyCode, keyCode, null);
     });
