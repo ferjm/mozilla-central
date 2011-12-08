@@ -39,7 +39,6 @@
 #define mozilla_dom_system_b2g_audiomanager_h__
 
 #include "nsIAudioManager.h"
-#include <media/AudioSystem.h>
 
 
 // {b2b51423-502d-4d77-89b3-7786b562b084}
