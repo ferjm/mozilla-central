@@ -54,6 +54,12 @@ CPPSRCS = \
   RadioManager.cpp \
   $(NULL)
 
+ifeq (gonk,$(MOZ_WIDGET_TOOLKIT))
+CPPSRCS += \
+  nsAudioManager.cpp \
+  $(NULL)
+endif
+
 XPIDLSRCS = \
   nsIAudioManager.idl \
   nsIRadioWorker.idl \
