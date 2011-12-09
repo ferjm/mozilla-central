@@ -135,7 +135,7 @@ using mozilla::dom::telephony::RadioManager;
 #endif
 #ifdef MOZ_WIDGET_GONK
 #include "nsAudioManager.h"
-using mozilla::dom::b2g;
+using mozilla::dom::b2g::nsAudioManager;
 #endif
 
 // Editor stuff
