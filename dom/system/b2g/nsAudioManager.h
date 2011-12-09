@@ -54,10 +54,17 @@ public:
   NS_DECL_ISUPPORTS
   NS_DECL_NSIAUDIOMANAGER
 
-  nsAudioManager();
+  nsAudioManager()
+  {
+    mPhoneState(PHONE_STATE_CURRENT);
+  }
 
 protected:
-  ~nsAudioManager();
+  ~nsAudioManager()
+  {
+  }
+
+  PRInt32 mPhoneState;
 };
 
 

@@ -38,7 +38,8 @@
 #include "nsISupports.idl"
 
 [scriptable, uuid(d2124467-7209-4b2e-a91a-cf3f90681e3c)]
-interface nsIAudioManager : nsISupports {
+interface nsIAudioManager : nsISupports
+{
 
   /**
    * Microphone muted?
@@ -65,7 +66,7 @@ interface nsIAudioManager : nsISupports {
   const long PHONE_STATE_IN_CALL          = 2;
   const long PHONE_STATE_IN_COMMUNICATION = 3;
 
-  void setPhoneState(in long state);
+  attribute long phoneState;
 
   /**
    * Use the force.

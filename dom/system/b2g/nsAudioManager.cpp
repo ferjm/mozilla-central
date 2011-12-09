@@ -96,6 +96,13 @@ nsAudioManager::SetMasterMuted(bool aMasterMuted)
 }
 
 NS_IMETHODIMP
+nsAudioManager::GetPhoneState(PRInt32* aState)
+{
+  *aState = mPhoneState;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsAudioManager::SetPhoneState(PRInt32 aState)
 {
   if (!AudioSystem::setPhoneState(aState)) {
