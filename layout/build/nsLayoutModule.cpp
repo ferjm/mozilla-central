@@ -134,8 +134,8 @@ using mozilla::dom::telephony::RadioManager;
 #include "nsITelephone.h"
 #endif
 #ifdef MOZ_WIDGET_GONK
-#include "nsAudioManager.h"
-using mozilla::dom::b2g::nsAudioManager;
+#include "AudioManager.h"
+using mozilla::dom::b2g::AudioManager;
 #endif
 
 // Editor stuff
@@ -352,7 +352,7 @@ RadioInterfaceConstructor(nsISupports *aOuter, REFNSIID aIID, void **aResult)
 #endif
 
 #ifdef MOZ_WIDGET_GONK
-NS_GENERIC_FACTORY_CONSTRUCTOR(nsAudioManager)
+NS_GENERIC_FACTORY_CONSTRUCTOR(AudioManager)
 #endif
 #ifndef MOZ_WIDGET_GONK
 #if defined(XP_UNIX)    || \
@@ -1005,7 +1005,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
   { &kTELEPHONYRADIOINTERFACE_CID, true, NULL, RadioInterfaceConstructor },
 #endif
 #ifdef MOZ_WIDGET_GONK
-  { &kNS_AUDIOMANAGER_CID, true, NULL, nsAudioManagerConstructor },
+  { &kNS_AUDIOMANAGER_CID, true, NULL, AudioManagerConstructor },
 #endif
 #ifdef ENABLE_EDITOR_API_LOG
   { &kNS_HTMLEDITOR_CID, false, NULL, nsHTMLEditorLogConstructor },

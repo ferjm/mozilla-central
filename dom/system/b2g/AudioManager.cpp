@@ -35,16 +35,16 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "nsAudioManager.h"
+#include "AudioManager.h"
 #include <media/AudioSystem.h>
 
 using namespace mozilla::dom::b2g;
 using namespace android;
 
-NS_IMPL_ISUPPORTS1(nsAudioManager, nsIAudioManager)
+NS_IMPL_ISUPPORTS1(AudioManager, nsIAudioManager)
 
 NS_IMETHODIMP
-nsAudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
+AudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 {
   if (!AudioSystem::isMicrophoneMuted(aMicrophoneMuted)) {
     return NS_ERROR_FAILURE;
@@ -53,7 +53,7 @@ nsAudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 }
 
 NS_IMETHODIMP
-nsAudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
+AudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
 {
   if (!AudioSystem::muteMicrophone(aMicrophoneMuted)) {
     return NS_ERROR_FAILURE;
@@ -62,7 +62,7 @@ nsAudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
 }
 
 NS_IMETHODIMP
-nsAudioManager::GetMasterVolume(float* aMasterVolume)
+AudioManager::GetMasterVolume(float* aMasterVolume)
 {
   if (!AudioSystem::getMasterVolume(aMasterVolume)) {
     return NS_ERROR_FAILURE;
@@ -71,7 +71,7 @@ nsAudioManager::GetMasterVolume(float* aMasterVolume)
 }
 
 NS_IMETHODIMP
-nsAudioManager::SetMasterVolume(float aMasterVolume)
+AudioManager::SetMasterVolume(float aMasterVolume)
 {
   if (!AudioSystem::setMasterVolume(aMasterVolume)) {
     return NS_ERROR_FAILURE;
@@ -80,7 +80,7 @@ nsAudioManager::SetMasterVolume(float aMasterVolume)
 }
 
 NS_IMETHODIMP
-nsAudioManager::GetMasterMuted(bool* aMasterMuted)
+AudioManager::GetMasterMuted(bool* aMasterMuted)
 {
   if (!AudioSystem::getMasterMute(aMasterMuted)) {
     return NS_ERROR_FAILURE;
@@ -89,7 +89,7 @@ nsAudioManager::GetMasterMuted(bool* aMasterMuted)
 }
 
 NS_IMETHODIMP
-nsAudioManager::SetMasterMuted(bool aMasterMuted)
+AudioManager::SetMasterMuted(bool aMasterMuted)
 {
   if (!AudioSystem::setMasterMute(aMasterMuted)) {
     return NS_ERROR_FAILURE;
@@ -98,14 +98,14 @@ nsAudioManager::SetMasterMuted(bool aMasterMuted)
 }
 
 NS_IMETHODIMP
-nsAudioManager::GetPhoneState(PRInt32* aState)
+AudioManager::GetPhoneState(PRInt32* aState)
 {
   *aState = mPhoneState;
   return NS_OK;
 }
 
 NS_IMETHODIMP
-nsAudioManager::SetPhoneState(PRInt32 aState)
+AudioManager::SetPhoneState(PRInt32 aState)
 {
   if (!AudioSystem::setPhoneState(aState)) {
     return NS_ERROR_FAILURE;
@@ -114,7 +114,7 @@ nsAudioManager::SetPhoneState(PRInt32 aState)
 }
 
 NS_IMETHODIMP
-nsAudioManager::SetForceForUse(PRInt32 aUsage, PRInt32 aForce)
+AudioManager::SetForceForUse(PRInt32 aUsage, PRInt32 aForce)
 {
   if (!AudioSystem::setForceUse((AudioSystem::force_use)aUsage,
                                 (AudioSystem::forced_config)aForce)) {
@@ -124,7 +124,7 @@ nsAudioManager::SetForceForUse(PRInt32 aUsage, PRInt32 aForce)
 }
 
 NS_IMETHODIMP
-nsAudioManager::GetForceForUse(PRInt32 aUsage, PRInt32* aForce) {
+AudioManager::GetForceForUse(PRInt32 aUsage, PRInt32* aForce) {
   *((AudioSystem::forced_config*)aForce) =
     AudioSystem::getForceUse((AudioSystem::force_use)aUsage);
   return NS_OK;

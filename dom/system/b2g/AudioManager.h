@@ -48,13 +48,13 @@
 
 namespace mozilla { namespace dom { namespace b2g {
 
-class nsAudioManager : public nsIAudioManager
+class AudioManager : public nsIAudioManager
 {
 public:
   NS_DECL_ISUPPORTS
   NS_DECL_NSIAUDIOMANAGER
 
-  nsAudioManager()
+  AudioManager()
   {
     mPhoneState = PHONE_STATE_CURRENT;
   }
