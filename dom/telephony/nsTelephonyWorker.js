@@ -196,7 +196,9 @@ nsTelephonyWorker.prototype = {
         gAudioManager.phoneState = Ci.nsIAudioManager.PHONE_STATE_RINGTONE;
         break;
       case DOM_CALL_READYSTATE_CONNECTED:
-        if (!oldState || oldState.callState == DOM_CALL_READYSTATE_CONNECTING) {
+        if (!oldState ||
+            oldState.callState == DOM_CALL_READYSTATE_INCOMING ||
+            oldState.callState == DOM_CALL_READYSTATE_CONNECTING) {
           // It's an incoming call, so tweak the audio now. If it was an
           // outgoing call, it would have been tweaked at dialing.
           this.worker.postMessage({type: "setMute", mute: false});
