@@ -60,10 +60,6 @@ public:
   }
 
 protected:
-  ~nsAudioManager()
-  {
-  }
-
   PRInt32 mPhoneState;
 };
 

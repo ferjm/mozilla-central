@@ -41,6 +41,8 @@
 using namespace mozilla::dom::b2g;
 using namespace android;
 
+NS_IMPL_ISUPPORTS1(nsAudioManager, nsIAudioManager)
+
 NS_IMETHODIMP
 nsAudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 {
