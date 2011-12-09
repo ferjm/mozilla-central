@@ -47,6 +47,10 @@ const TELEPHONYWORKER_CID        = Components.ID("{2d831c8d-6017-435b-a80c-e5d42
 
 const DOM_CALL_READYSTATE_DISCONNECTED = "disconnected";
 
+XPCOMUtils.defineLazyServiceGetter("gAudioManager", this,
+                                   "@mozilla.org/telephony/audiomanager;1",
+                                   "nsIAudioManager");
+
 function nsTelephonyWorker() {
   this.worker = new ChromeWorker("resource://gre/modules/ril_worker.js");
   this.worker.onerror = this.onerror.bind(this);

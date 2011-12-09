@@ -55,9 +55,7 @@ CPPSRCS = \
   $(NULL)
 
 ifeq (gonk,$(MOZ_WIDGET_TOOLKIT))
-CPPSRCS += \
-  nsAudioManager.cpp \
-  $(NULL)
+CPPSRCS += nsAudioManager.cpp
 endif
 
 XPIDLSRCS = \

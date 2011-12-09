@@ -56,7 +56,7 @@ public:
 
   nsAudioManager()
   {
-    mPhoneState(PHONE_STATE_CURRENT);
+    mPhoneState = PHONE_STATE_CURRENT;
   }
 
 protected:

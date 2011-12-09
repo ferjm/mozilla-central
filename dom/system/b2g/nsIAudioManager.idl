@@ -37,7 +37,7 @@
 
 #include "nsISupports.idl"
 
-[scriptable, uuid(d2124467-7209-4b2e-a91a-cf3f90681e3c)]
+[scriptable, builtinclass, uuid(d2124467-7209-4b2e-a91a-cf3f90681e3c)]
 interface nsIAudioManager : nsISupports
 {
 
