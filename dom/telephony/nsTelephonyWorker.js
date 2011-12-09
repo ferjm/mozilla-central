@@ -187,6 +187,7 @@ nsTelephonyWorker.prototype = {
     //TODO this does not handle multiple concurrent calls yet.
     switch (message.callState) {
       case DOM_CALL_READYSTATE_DIALING:
+        this.worker.postMessage({type: "setMute", mute: false});
         gAudioManager.phoneState = Ci.nsIAudioManager.PHONE_STATE_IN_CALL;
         gAudioManager.setForceForUse(Ci.nsIAudioManager.USE_COMMUNICATION,
                                      Ci.nsIAudioManager.FORCE_NONE);
@@ -198,12 +199,14 @@ nsTelephonyWorker.prototype = {
         if (!oldState || oldState.callState == DOM_CALL_READYSTATE_CONNECTING) {
           // It's an incoming call, so tweak the audio now. If it was an
           // outgoing call, it would have been tweaked at dialing.
+          this.worker.postMessage({type: "setMute", mute: false});
           gAudioManager.phoneState = Ci.nsIAudioManager.PHONE_STATE_IN_CALL;
           gAudioManager.setForceForUse(Ci.nsIAudioManager.USE_COMMUNICATION,
                                        Ci.nsIAudioManager.FORCE_NONE);
         }
         break;
       case DOM_CALL_READYSTATE_DISCONNECTED:
+        this.worker.postMessage({type: "setMute", mute: true});
         gAudioManager.phoneState = Ci.nsIAudioManager.PHONE_STATE_NORMAL;
         break;
     }
