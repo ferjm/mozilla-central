@@ -46,7 +46,7 @@ NS_IMPL_ISUPPORTS1(AudioManager, nsIAudioManager)
 NS_IMETHODIMP
 AudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 {
-  if (!AudioSystem::isMicrophoneMuted(aMicrophoneMuted)) {
+  if (AudioSystem::isMicrophoneMuted(aMicrophoneMuted)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -55,7 +55,7 @@ AudioManager::GetMicrophoneMuted(bool* aMicrophoneMuted)
 NS_IMETHODIMP
 AudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
 {
-  if (!AudioSystem::muteMicrophone(aMicrophoneMuted)) {
+  if (AudioSystem::muteMicrophone(aMicrophoneMuted)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -64,7 +64,7 @@ AudioManager::SetMicrophoneMuted(bool aMicrophoneMuted)
 NS_IMETHODIMP
 AudioManager::GetMasterVolume(float* aMasterVolume)
 {
-  if (!AudioSystem::getMasterVolume(aMasterVolume)) {
+  if (AudioSystem::getMasterVolume(aMasterVolume)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -73,7 +73,7 @@ AudioManager::GetMasterVolume(float* aMasterVolume)
 NS_IMETHODIMP
 AudioManager::SetMasterVolume(float aMasterVolume)
 {
-  if (!AudioSystem::setMasterVolume(aMasterVolume)) {
+  if (AudioSystem::setMasterVolume(aMasterVolume)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -82,7 +82,7 @@ AudioManager::SetMasterVolume(float aMasterVolume)
 NS_IMETHODIMP
 AudioManager::GetMasterMuted(bool* aMasterMuted)
 {
-  if (!AudioSystem::getMasterMute(aMasterMuted)) {
+  if (AudioSystem::getMasterMute(aMasterMuted)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -91,7 +91,7 @@ AudioManager::GetMasterMuted(bool* aMasterMuted)
 NS_IMETHODIMP
 AudioManager::SetMasterMuted(bool aMasterMuted)
 {
-  if (!AudioSystem::setMasterMute(aMasterMuted)) {
+  if (AudioSystem::setMasterMute(aMasterMuted)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -107,7 +107,7 @@ AudioManager::GetPhoneState(PRInt32* aState)
 NS_IMETHODIMP
 AudioManager::SetPhoneState(PRInt32 aState)
 {
-  if (!AudioSystem::setPhoneState(aState)) {
+  if (AudioSystem::setPhoneState(aState)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -116,8 +116,8 @@ AudioManager::SetPhoneState(PRInt32 aState)
 NS_IMETHODIMP
 AudioManager::SetForceForUse(PRInt32 aUsage, PRInt32 aForce)
 {
-  if (!AudioSystem::setForceUse((AudioSystem::force_use)aUsage,
-                                (AudioSystem::forced_config)aForce)) {
+  if (AudioSystem::setForceUse((AudioSystem::force_use)aUsage,
+                               (AudioSystem::forced_config)aForce)) {
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
