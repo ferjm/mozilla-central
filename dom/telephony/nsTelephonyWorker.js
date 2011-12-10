@@ -80,6 +80,8 @@ XPCOMUtils.defineLazyGetter(this, "gAudioManager", function getAudioManager() {
     return Cc["@mozilla.org/telephony/audiomanager;1"]
              .getService(Ci.nsIAudioManager);
   } catch (ex) {
+    //TODO on the phone this should not fall back as silently.
+    debug("Using fake audio manager.");
     return FakeAudioManager;
   }
 });
@@ -180,7 +182,7 @@ nsTelephonyWorker.prototype = {
     if (message.callState == DOM_CALL_READYSTATE_DISCONNECTED) {
       delete currentCalls[message.callIndex];
     } else {
-       currentCalls[message.callIndex] = message;
+      currentCalls[message.callIndex] = message;
     }
 
     // Update the audio system.
