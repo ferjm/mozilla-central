@@ -46,7 +46,9 @@
       {0x89, 0x10, 0xf9, 0x3c, 0x55, 0xe6, 0x62, 0xec}}
 #define NS_AUDIOMANAGER_CONTRACTID "@mozilla.org/telephony/audiomanager;1"
 
-namespace mozilla { namespace dom { namespace b2g {
+namespace mozilla {
+namespace dom {
+namespace telephony {
 
 class AudioManager : public nsIAudioManager
 {
@@ -54,9 +56,8 @@ public:
   NS_DECL_ISUPPORTS
   NS_DECL_NSIAUDIOMANAGER
 
-  AudioManager()
+  AudioManager() : mPhoneState(PHONE_STATE_CURRENT)
   {
-    mPhoneState = PHONE_STATE_CURRENT;
   }
 
 protected:
@@ -64,6 +65,8 @@ protected:
 };
 
 
-} /* namespace b2g */ } /* namespace dom */ } /* namespace mozilla */
+} /* namespace telephony */
+} /* namespace dom */
+} /* namespace mozilla */
 
 #endif // mozilla_dom_system_b2g_audiomanager_h__

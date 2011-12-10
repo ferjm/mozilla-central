@@ -38,7 +38,7 @@
 #include "AudioManager.h"
 #include <media/AudioSystem.h>
 
-using namespace mozilla::dom::b2g;
+using namespace mozilla::dom::telephony;
 using namespace android;
 
 NS_IMPL_ISUPPORTS1(AudioManager, nsIAudioManager)
@@ -125,7 +125,6 @@ AudioManager::SetForceForUse(PRInt32 aUsage, PRInt32 aForce)
 
 NS_IMETHODIMP
 AudioManager::GetForceForUse(PRInt32 aUsage, PRInt32* aForce) {
-  *((AudioSystem::forced_config*)aForce) =
-    AudioSystem::getForceUse((AudioSystem::force_use)aUsage);
+  *aForce = AudioSystem::getForceUse((AudioSystem::force_use)aUsage);
   return NS_OK;
 }

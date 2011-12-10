@@ -135,7 +135,7 @@ using mozilla::dom::telephony::RadioManager;
 #endif
 #ifdef MOZ_WIDGET_GONK
 #include "AudioManager.h"
-using mozilla::dom::b2g::AudioManager;
+using mozilla::dom::telephony::AudioManager;
 #endif
 
 // Editor stuff
@@ -353,8 +353,7 @@ RadioInterfaceConstructor(nsISupports *aOuter, REFNSIID aIID, void **aResult)
 
 #ifdef MOZ_WIDGET_GONK
 NS_GENERIC_FACTORY_CONSTRUCTOR(AudioManager)
-#endif
-#ifndef MOZ_WIDGET_GONK
+#else
 #if defined(XP_UNIX)    || \
     defined(_WINDOWS)   || \
     defined(machintosh) || \

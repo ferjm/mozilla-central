@@ -40,7 +40,6 @@
 [scriptable, builtinclass, uuid(d2124467-7209-4b2e-a91a-cf3f90681e3c)]
 interface nsIAudioManager : nsISupports
 {
-
   /**
    * Microphone muted?
    */
@@ -69,12 +68,8 @@ interface nsIAudioManager : nsISupports
   attribute long phoneState;
 
   /**
-   * Use the force.
-   *
-   * No, really, this configures a particular device ("force") to be used
-   * for one of the uses (communication, media playback, etc.)
-   *
-   * Don't you hate geeks?
+   * Configure a particular device ("force") to be used for one of the uses
+   * (communication, media playback, etc.)
    */
   const long FORCE_NONE            = 0; // the default
   const long FORCE_SPEAKER         = 1;
@@ -92,5 +87,4 @@ interface nsIAudioManager : nsISupports
 
   void setForceForUse(in long usage, in long force);
   long getForceForUse(in long usage);
-
 };
