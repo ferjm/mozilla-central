@@ -390,3 +390,7 @@ pref("layers.acceleration.force-enabled", true);
 // screen.enabled and screen.brightness properties.
 pref("dom.screenEnabledProperty.enabled", true);
 pref("dom.screenBrightnessProperty.enabled", true);
+
+// Temporary permission hack for WebSMS
+pref("dom.sms.enabled", true);
+pref("dom.sms.whitelist", "file://,http://gaiamobile.org:8888");
