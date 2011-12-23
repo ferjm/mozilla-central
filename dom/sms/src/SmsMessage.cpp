@@ -62,7 +62,7 @@ SmsMessage::SmsMessage(const SmsMessageData& aData)
 {
 }
 
-nsresult
+/* static */ nsresult
 SmsMessage::Create(PRInt32 aId,
                    const nsAString& aDelivery,
                    const nsAString& aSender,
