@@ -64,6 +64,10 @@
 
 #include "WorkerInlines.h"
 
+#ifdef ANDROID
+#include <android/log.h>
+#endif
+
 #define PROPERTY_FLAGS \
   JSPROP_ENUMERATE | JSPROP_SHARED
 
@@ -517,6 +521,9 @@ private:
         return false;
       }
 
+#ifdef ANDROID
+    __android_log_print(ANDROID_LOG_INFO, "Gecko", buffer.ptr());
+#endif
       fputs(buffer.ptr(), stderr);
       fflush(stderr);
     }
