@@ -12,4 +12,8 @@ XPCSHELL_TESTS = unit
 include $(topsrcdir)/config/rules.mk
 
 libs::
-	$(NSINSTALL) -D $(DEPTH)/_tests/xpcshell/$(relativesrcdir)
+	$(INSTALL) $(topsrcdir)/dom/telephony/ril_worker.js \
+          $(DEPTH)/_tests/xpcshell/$(relativesrcdir)/unit/
+	$(INSTALL) $(topsrcdir)/dom/telephony/ril_consts.js \
+          $(DEPTH)/_tests/xpcshell/$(relativesrcdir)/unit/
+
