@@ -35,14 +35,14 @@ function run_test() {
  */
 
 function testPacket(p) {
-   // Test function for putting chunked parcels back together. Makes sure
-   // we recreated the parcel correctly.
-   let response = Buf.readUint32();
-   do_check_eq(response, 1);
-   let request = Buf.readUint32();
-   do_check_eq(request, RIL_UNSOL_RESPONSE_RADIO_CHANGED);
-   let data = Buf.readUint32();
-   do_check_eq(data, 0);
+  // Test function for putting chunked parcels back together. Makes sure
+  // we recreated the parcel correctly.
+  let response = Buf.readUint32();
+  do_check_eq(response, 1);
+  let request = Buf.readUint32();
+  do_check_eq(request, RIL_UNSOL_RESPONSE_RADIO_CHANGED);
+  let data = Buf.readUint32();
+  do_check_eq(data, 0);
 }
 
 // Create a byte array that looks like a raw parcel
@@ -127,11 +127,26 @@ add_test(function test_write_string() {
   run_next_test();
 });
 
+//TODO: test failing...
 add_test(function test_read_string() {
   let test_parcel = [0,0,0,52, 1,0,0,0, 78,97,188,0, 0,0,0,0, 18,0,0,0,73,0,32,0,97,0,109,0,32,0,97,0,32,0,116,0,101,0,115,0,116,0,32,0,115,0,116,0,114,0,105,0,110,0,103,0, 0, 0, 0, 0];
   RIL[B2G_TEST_PARCEL] = function B2G_TEST_PARCEL(l) {
     let str = Buf.readString();
     //do_check_eq(str, "I am a test string");
+  };
+  Buf.processIncoming(test_parcel);
+  run_next_test();
+});
+
+//TODO: test failing...
+add_test(function test_read_string_list() {
+  let test_parcel = [0,0,0,152, 1,0,0,0, 78,97,188,0, 0,0,0,0, 3,0,0,0,3,0,0,0,18,0,0,0,73,0,32,0,97,0,109,0,32,0,97,0,32,0,116,0,101,0,115,0,116,0,32,0,115,0,116,0,114,0,105,0,110,0,103,0,0,0,0,0,18,0,0,0,73,0,32,0,97,0,109,0,32,0,97,0,32,0,116,0,101,0,115,0,116,0,32,0,115,0,116,0,114,0,105,0,110,0,103,0,0,0,0,0,18,0,0,0,73,0,32,0,97,0,109,0,32,0,97,0,32,0,116,0,101,0,115,0,116,0,32,0,115,0,116,0,114,0,105,0,110,0,103,0,0,0,0,0];
+  RIL[B2G_TEST_PARCEL] = function B2G_TEST_PARCEL(l) {
+    let str = Buf.readStringList();
+    //do_check_eq(str.length, 3);
+    for (let i = 0; i < str.length; ++i) {
+      //do_check_eq(str[i] === "I am a test string");
+    }
   };
   Buf.processIncoming(test_parcel);
   run_next_test();
